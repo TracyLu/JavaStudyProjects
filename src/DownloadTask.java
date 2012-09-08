@@ -78,7 +78,7 @@ public class DownloadTask {
 					@Override
 					public void run() {
 						download(path, finalPartLength * seq, finalPartLength
-								* (seq + 1) - 1, logfile, i);
+								* (seq + 1) - 1, logfile, seq);
 
 					}
 				});
@@ -88,7 +88,7 @@ public class DownloadTask {
 					@Override
 					public void run() {
 						download(path, finalPartLength * seq,
-								finalTotalLength - 1, logfile, i);
+								finalTotalLength - 1, logfile, seq);
 					}
 				});
 			}
