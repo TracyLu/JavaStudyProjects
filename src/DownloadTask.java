@@ -71,14 +71,14 @@ public class DownloadTask {
 		for (int i = 0; i < threadNumber; i++) {
 			final int seq = i;
 			final int finalPartLength = partLength;
-			final File logfile = new File(file.getName() + "_"+i+"_log");
+			final File logfile = new File(file.getName() +"_log");
 			if (i < threadNumber - 1) {
 				pool.execute(new Runnable() {
 
 					@Override
 					public void run() {
 						download(path, finalPartLength * seq, finalPartLength
-								* (seq + 1) - 1, logfile);
+								* (seq + 1) - 1, logfile, i);
 
 					}
 				});
@@ -88,7 +88,7 @@ public class DownloadTask {
 					@Override
 					public void run() {
 						download(path, finalPartLength * seq,
-								finalTotalLength - 1, logfile);
+								finalTotalLength - 1, logfile, i);
 					}
 				});
 			}
@@ -111,7 +111,7 @@ public class DownloadTask {
 
 	}
 
-	private void download(String path, int start, int end, File logfile) {
+	private void download(String path, int start, int end, File logfile, int seq) {
 		URL url = null;
 		try {
 			url = new URL(path);
@@ -123,7 +123,7 @@ public class DownloadTask {
 		RandomAccessFile fs = null;
 		byte[] buf = new byte[8096];
 		int size = 0;
-		int count = 0;
+		long count = DownloadHelper.readOffset(seq); 
 		try {
 			openConnection = (HttpURLConnection) url.openConnection();
 			openConnection.setRequestProperty("RANGE", "bytes=" + start + "-"
@@ -132,13 +132,12 @@ public class DownloadTask {
 			bs = openConnection.getInputStream();
 			fs = new RandomAccessFile(file, "rw");
 			int off = start;
-			FileOutputStream fos = new FileOutputStream(logfile);
+			RandomAccessFile fos = new RandomAccessFile(logfile, "rw");
 			while ((size = bs.read(buf)) != -1) {
 				fs.seek(off);
 				fs.write(buf, 0, size);
-				fos.write(off);
-				fos.write(end);
 				count += size;
+				DownloadHelper.writeOffSet(seq, count);
 				off += size;
 			}
 			poolLock.lock();
