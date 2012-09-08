@@ -1,6 +1,22 @@
 Goal
 
-As a Java developer teacher, I want my students to do a simulation project "Download App", so that they will get famaliar with popular developing techniques, such as:
+As a Java developer teacher, I want my students to do a simulation project "Download App", so that they will get familiar with design concepts, such as:
+1.Modular 
+2.Life cycle
+3.Synchronous and Asynchronous
+4.Remote
+5.Error Handling
+6.Concurrency
+   a.Data Race
+   b.Order
+   c.Visibility
+   d.Critical Area and Mutually exclusive
+7.Self-diagnose
+8.Recovery from Exceptional Scenarios 
+9.Class responsibility design
+
+and popular developing techniques, such as:
+
 1.Core Java
    a.Object, Class, Interface
    b.Exception Handling
@@ -11,9 +27,8 @@ As a Java developer teacher, I want my students to do a simulation project "Down
      ii.Socket 
 2.Agile Process
    a.Product Backlog(User Story) 
-   b.Sizing
+   b.Story time and Sizing
    c.Planning Meeting
-   d.Daily Standup Meeting
-   e.Show Time
+   d.Daily Stand Up Meeting and Weekly Meeting
+   e.Sprint Review
    f.Retrospective Meeting
-   
