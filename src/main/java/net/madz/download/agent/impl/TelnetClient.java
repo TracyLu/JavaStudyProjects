@@ -17,15 +17,17 @@ import net.madz.download.service.IServiceResponse;
 
 public class TelnetClient implements ITelnetClient {
 
-	static final String DESERIALIZER_SERIALIZER_SERVICE_SHOULD_BE_INITIALIZED = "deserializer, serializer, service should be initialized";
-	static final String SOCKET_CANNOT_BE_NULL = "Socket cannot be null";
-	static final String SOCKET_IS_NOT_CONNECTED = "Socket is not connected";
+	static final String SERVICE_IS_ALREADY_STARTED = "Service is already started.";
+	static final String SERVICE_IS_NOT_STARTED_YET = "Service is not started or stopped.";
+	static final String DESERIALIZER_SERIALIZER_SERVICE_SHOULD_BE_INITIALIZED = "Deserializer, serializer, service should be initialized.";
+	static final String SOCKET_CANNOT_BE_NULL = "Socket cannot be null.";
+	static final String SOCKET_IS_NOT_CONNECTED = "Socket is not connected.";
 
 	private final Socket socket;
 	private final BufferedReader reader;
 	private final PrintWriter writer;
 	private Thread listeningThread;
-	private boolean started = false;
+	private volatile boolean started = false;
 
 	// to be injected
 	private IRequestDeserializer deserializer;
@@ -65,17 +67,22 @@ public class TelnetClient implements ITelnetClient {
 
 	@Override
 	public synchronized void start() {
-
-		if (null != listeningThread) {
-			return;
+		if (this.isStarted()) {
+			throw new IllegalStateException(SERVICE_IS_ALREADY_STARTED);
 		}
 
 		validatePrequesit();
 
-		listeningThread = new Thread(new Runnable() {
+		listeningThread = allocatListeningThread();
+		listeningThread.start();
+	}
+
+	private Thread allocatListeningThread() {
+		return new Thread(new Runnable() {
 
 			@Override
 			public void run() {
+				started = true;
 				try {
 					while (!Thread.currentThread().isInterrupted()) {
 						final String plainTextRequest = reader.readLine();
@@ -100,7 +107,6 @@ public class TelnetClient implements ITelnetClient {
 			}
 
 		});
-		started = true;
 	}
 
 	private void validatePrequesit() {
@@ -109,8 +115,7 @@ public class TelnetClient implements ITelnetClient {
 					DESERIALIZER_SERIALIZER_SERVICE_SHOULD_BE_INITIALIZED);
 		}
 		if (!service.isStarted()) {
-			throw new IllegalStateException(
-					"service is not started or is stopped.");
+			throw new IllegalStateException(SERVICE_IS_NOT_STARTED_YET);
 		}
 		validateSocket();
 	}
@@ -126,15 +131,16 @@ public class TelnetClient implements ITelnetClient {
 			socket.close();
 		} catch (IOException ignored) {
 		}
+		listeningThread = null;
 	}
 
 	@Override
 	public synchronized void stop() {
-		if (null == listeningThread) {
-			return;
+		if (!this.isStarted()) {
+			throw new IllegalStateException(SERVICE_IS_NOT_STARTED_YET);
 		}
 		listeningThread.interrupt();
-		listeningThread = null;
+		
 	}
 
 	@Override

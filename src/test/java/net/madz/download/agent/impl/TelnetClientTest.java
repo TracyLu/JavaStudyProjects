@@ -10,6 +10,7 @@ import java.net.Socket;
 import junit.framework.Assert;
 import mockit.Mocked;
 import mockit.NonStrictExpectations;
+import net.madz.download.agent.protocol.IRequestDeserializer;
 import net.madz.download.agent.protocol.IResponseSerializer;
 import net.madz.download.service.IService;
 
@@ -66,7 +67,9 @@ public class TelnetClientTest {
 
 	@Test(expected = IllegalStateException.class)
 	public void testStart_deserializer_not_initialized(
-			@Mocked final Socket socket, @Mocked final IResponseSerializer serializer, @Mocked final IService service) {
+			@Mocked final Socket socket,
+			@Mocked final IResponseSerializer serializer,
+			@Mocked final IService service) {
 		new NonStrictExpectations() {
 			{
 				try {
@@ -78,7 +81,7 @@ public class TelnetClientTest {
 
 					socket.getOutputStream();
 					result = new ByteArrayOutputStream();
-					
+
 				} catch (IOException e) {
 					fail("IOException is not expected");
 				}
@@ -94,25 +97,123 @@ public class TelnetClientTest {
 		} catch (IOException e) {
 			e.printStackTrace();
 		} catch (IllegalStateException ex) {
-			Assert.assertEquals(TelnetClient.DESERIALIZER_SERIALIZER_SERVICE_SHOULD_BE_INITIALIZED, ex.getMessage());
+			Assert.assertEquals(
+					TelnetClient.DESERIALIZER_SERIALIZER_SERVICE_SHOULD_BE_INITIALIZED,
+					ex.getMessage());
 			throw ex;
 		}
 		fail("Not expected here");
 	}
 
 	@Test(expected = IllegalStateException.class)
-	public void testStart_serializr_not_initialized() {
-		fail("Not yet implemented");
-	}
+	public void testStart_serializr_not_initialized(
+			@Mocked final Socket socket,
+			@Mocked final IRequestDeserializer deserializer,
+			@Mocked final IService service) {
+		new NonStrictExpectations() {
+			{
+				try {
+					socket.isConnected();
+					result = true;
 
-	@Test(expected = IllegalStateException.class)
-	public void testStart_avoid_duplicate_start(@Mocked final Socket socket) {
-		fail("Not yet implemented");
+					socket.getInputStream();
+					result = new ByteArrayInputStream(new byte[1024]);
+
+					socket.getOutputStream();
+					result = new ByteArrayOutputStream();
+
+				} catch (IOException e) {
+					fail("IOException is not expected");
+				}
+			}
+		};
+
+		try {
+			TelnetClient client = new TelnetClient(socket);
+			client.setDeserializer(deserializer);
+			client.setService(service);
+			client.setSerializer(null);
+			client.start();
+		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (IllegalStateException ex) {
+			Assert.assertEquals(
+					TelnetClient.DESERIALIZER_SERIALIZER_SERVICE_SHOULD_BE_INITIALIZED,
+					ex.getMessage());
+			throw ex;
+		}
+		fail("Not expected here.");
 	}
 
 	@Test
-	public void testStop() {
-		fail("Not yet implemented");
+	public void testStart_avoid_duplicate_start(@Mocked final Socket socket,
+			@Mocked final IRequestDeserializer deserializer,
+			@Mocked final IResponseSerializer serializer,
+			@Mocked final IService service) {
+		new NonStrictExpectations() {
+			{
+				try {
+					socket.isConnected();
+					result = true;
+
+					socket.getInputStream();
+					result = new ByteArrayInputStream(new byte[1024]);
+
+					socket.getOutputStream();
+					result = new ByteArrayOutputStream();
+
+					service.isStarted();
+					result = true;
+				} catch (IOException e) {
+					fail("IOException is not expected");
+				}
+			}
+		};
+
+		TelnetClient client = null;
+		try {
+			client = new TelnetClient(socket);
+			client.setDeserializer(deserializer);
+			client.setService(service);
+			client.setSerializer(serializer);
+			client.start();
+		} catch (IOException e) {
+			fail("IOException is not expected");
+		}
+		try {
+			client.start();
+			fail("Not expected to be here.");
+		} catch (IllegalStateException ex) {
+			Assert.assertEquals(TelnetClient.SERVICE_IS_ALREADY_STARTED,
+					ex.getMessage());
+		}
+	}
+
+	@Test
+	public void testStop(@Mocked final Socket socket,
+			@Mocked final IRequestDeserializer deserializer,
+			@Mocked final IResponseSerializer serializer,
+			@Mocked final IService service) {
+		new NonStrictExpectations() {
+			{
+				try {
+					socket.isConnected();
+					result = true;
+
+					socket.getInputStream();
+					result = new ByteArrayInputStream(new byte[1024]);
+
+					socket.getOutputStream();
+					result = new ByteArrayOutputStream();
+
+					service.isStarted();
+					result = true;
+
+				} catch (IOException e) {
+					fail("IOException is not expected");
+				}
+			}
+		};
 	}
 
 	@Test
