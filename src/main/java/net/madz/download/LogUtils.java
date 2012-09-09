@@ -1,7 +1,5 @@
 package net.madz.download;
 
-import java.io.IOException;
-
 import org.apache.log4j.Logger;
 
 public class LogUtils {
@@ -12,7 +10,7 @@ public class LogUtils {
 	}
 
 	@SuppressWarnings("rawtypes")
-	public static void error(Class cls, IOException e) {
+	public static void error(Class cls, Throwable e) {
 		Logger.getLogger(cls).error(e.getMessage(), e);
 	}
 

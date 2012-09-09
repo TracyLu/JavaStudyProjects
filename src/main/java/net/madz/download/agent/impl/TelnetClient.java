@@ -79,7 +79,7 @@ public class TelnetClient implements ITelnetClient {
 			try {
 				wait();
 			} catch (InterruptedException e) {
-				e.printStackTrace();
+			   LogUtils.error(TelnetClient.class, e);
 			}
 		}
 	}
