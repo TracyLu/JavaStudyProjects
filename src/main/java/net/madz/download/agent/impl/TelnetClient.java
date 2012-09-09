@@ -101,7 +101,10 @@ public class TelnetClient implements ITelnetClient {
 					LogUtils.error(TelnetClient.class, e);
 				} finally {
 					releaseAll();
-					started = false;
+					synchronized (TelnetClient.this) {
+						started = false;
+						TelnetClient.this.notify();
+					}
 				}
 
 			}
@@ -140,7 +143,12 @@ public class TelnetClient implements ITelnetClient {
 			throw new IllegalStateException(SERVICE_IS_NOT_STARTED_YET);
 		}
 		listeningThread.interrupt();
-		
+		try {
+			while (isStarted()) {
+				wait();
+			}
+		} catch (InterruptedException ignored) {
+		}
 	}
 
 	@Override
