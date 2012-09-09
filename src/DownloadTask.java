@@ -15,11 +15,11 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class DownloadTask {
-	private int threadNumber = 5; //default thread number
-	private ExecutorService pool; //We use thread pool
-	private String path = ""; //the resource url
+	private int threadNumber = 5; // default thread number
+	private ExecutorService pool; // We use thread pool
+	private String path = ""; // the resource url
 	private static File file; // Point to the storage file
-	private Lock poolLock = new ReentrantLock(); 
+	private Lock poolLock = new ReentrantLock();
 	private Condition allDone = poolLock.newCondition();
 	private int doneNumber = 0;
 	private LinkedList<File> files;
@@ -71,7 +71,7 @@ public class DownloadTask {
 		for (int i = 0; i < threadNumber; i++) {
 			final int seq = i;
 			final int finalPartLength = partLength;
-			final File logfile = new File(file.getName() +"_log");
+			final File logfile = new File(file.getName() + "_log");
 			if (i < threadNumber - 1) {
 				pool.execute(new Runnable() {
 
@@ -99,7 +99,9 @@ public class DownloadTask {
 			while (doneNumber < threadNumber) {
 				try {
 					allDone.await();
-					pool.shutdown();
+					if (doneNumber == threadNumber) {
+						pool.shutdown();
+					}
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
@@ -123,7 +125,7 @@ public class DownloadTask {
 		RandomAccessFile fs = null;
 		byte[] buf = new byte[8096];
 		int size = 0;
-		long count = DownloadHelper.readOffset(seq); 
+		long count = DownloadHelper.readOffset(seq);
 		try {
 			openConnection = (HttpURLConnection) url.openConnection();
 			openConnection.setRequestProperty("RANGE", "bytes=" + start + "-"

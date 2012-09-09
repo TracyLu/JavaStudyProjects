@@ -54,7 +54,7 @@ public class TelnetClientTest {
 
 		try {
 			final TelnetClient client = new TelnetClient(socket);
-			client.start();
+			startClient(client);
 		} catch (IOException e) {
 			fail("IOException is not expected");
 		} catch (IllegalStateException e) {
@@ -77,7 +77,7 @@ public class TelnetClientTest {
 			client.setSerializer(serializer);
 			client.setService(service);
 			client.setDeserializer(null);
-			client.start();
+			startClient(client);
 		} catch (IOException e) {
 			e.printStackTrace();
 		} catch (IllegalStateException ex) {
@@ -124,7 +124,7 @@ public class TelnetClientTest {
 			client.setDeserializer(deserializer);
 			client.setService(service);
 			client.setSerializer(null);
-			client.start();
+			startClient(client);
 		} catch (IOException e) {
 			e.printStackTrace();
 		} catch (IllegalStateException ex) {
@@ -143,10 +143,11 @@ public class TelnetClientTest {
 			@Mocked final IService service) {
 		prepareResourceForPositiveCase(socket, service);
 
-		TelnetClient client = startClient(socket, deserializer, serializer,
+		TelnetClient client = initClient(socket, deserializer, serializer,
 				service);
+		startClient(client);
 		try {
-			client.start();
+			startClient(client);
 			fail("Not expected to be here.");
 		} catch (IllegalStateException ex) {
 			Assert.assertEquals(TelnetClient.SERVICE_IS_ALREADY_STARTED,
@@ -160,10 +161,11 @@ public class TelnetClientTest {
 			@Mocked final IResponseSerializer serializer,
 			@Mocked final IService service) {
 		prepareResourceForPositiveCase(socket, service);
-		TelnetClient client = startClient(socket, deserializer, serializer,
+		TelnetClient client = initClient(socket, deserializer, serializer,
 				service);
+		startClient(client);
 		client.stop();
-		
+
 		Assert.assertEquals(false, client.isStarted());
 		try {
 			client.stop();
@@ -175,7 +177,7 @@ public class TelnetClientTest {
 
 	}
 
-	private TelnetClient startClient(final Socket socket,
+	private TelnetClient initClient(final Socket socket,
 			final IRequestDeserializer deserializer,
 			final IResponseSerializer serializer, final IService service) {
 		TelnetClient client = null;
@@ -184,16 +186,27 @@ public class TelnetClientTest {
 			client.setDeserializer(deserializer);
 			client.setService(service);
 			client.setSerializer(serializer);
-			client.start();
 		} catch (IOException e) {
 			fail("IOException is not expected");
 		}
 		return client;
 	}
 
+	private void startClient(TelnetClient client) {
+		client.start();
+	}
+
 	@Test
-	public void testIsStarted() {
-		fail("Not yet implemented");
+	public void testIsStarted(@Mocked final Socket socket,
+			@Mocked final IRequestDeserializer deserializer,
+			@Mocked final IResponseSerializer serializer,
+			@Mocked final IService service) {
+		prepareResourceForPositiveCase(socket, service);
+		TelnetClient client = initClient(socket, deserializer, serializer,
+				service);
+		Assert.assertEquals(false, client.isStarted());
+		startClient(client);
+		Assert.assertEquals(true, client.isStarted());
 	}
 
 }

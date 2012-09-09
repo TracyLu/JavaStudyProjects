@@ -75,6 +75,13 @@ public class TelnetClient implements ITelnetClient {
 
 		listeningThread = allocatListeningThread();
 		listeningThread.start();
+		while (!started) {
+			try {
+				wait();
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
 	}
 
 	private Thread allocatListeningThread() {
@@ -82,7 +89,10 @@ public class TelnetClient implements ITelnetClient {
 
 			@Override
 			public void run() {
-				started = true;
+				synchronized (TelnetClient.this) {
+					started = true;
+					TelnetClient.this.notify();
+				}
 				try {
 					while (!Thread.currentThread().isInterrupted()) {
 						final String plainTextRequest = reader.readLine();
@@ -100,9 +110,10 @@ public class TelnetClient implements ITelnetClient {
 				} catch (IOException e) {
 					LogUtils.error(TelnetClient.class, e);
 				} finally {
-					releaseAll();
 					synchronized (TelnetClient.this) {
+						releaseAll();
 						started = false;
+						listeningThread = null;
 						TelnetClient.this.notify();
 					}
 				}
@@ -134,7 +145,7 @@ public class TelnetClient implements ITelnetClient {
 			socket.close();
 		} catch (IOException ignored) {
 		}
-		listeningThread = null;
+		
 	}
 
 	@Override
