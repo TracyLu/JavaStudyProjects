@@ -1,17 +1,32 @@
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.net.ServerSocket;
+import java.net.Socket;
+
 public class DownloadService {
-	public static void main(String[] args) {
-		String path = "http://dl_dir.qq.com/qqfile/qq/QQforMac/QQ_V2.1.3.dmg";
-		DownloadTask task = new DownloadTask(path, "QQ.dmg", 20);
-//		DownloadHelper helper = new DownloadHelper(task);
-		long start = System.currentTimeMillis();
-		task.download();
-		long end = System.currentTimeMillis();
-		System.out.println("total time:" + (end - start));
-		
-		DownloadTask task2 = new DownloadTask(path, "QQ2.dmg");
-		start = System.currentTimeMillis();
-		task2.download();
-		end = System.currentTimeMillis();
-		System.out.println("total time 2:" + (end - start));
-	}
+   public static void main(String[] args) {
+      
+      try {
+         ServerSocket serverSocket = new ServerSocket(9999);
+         Socket socket = serverSocket.accept();
+         BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+         PrintWriter writer = new PrintWriter(new OutputStreamWriter(socket.getOutputStream()));
+         String line = null;
+         while (null != (line = reader.readLine())) {
+            if ("quit".equals(line)) {
+               break;
+            } else {
+               writer.println("echo: " + line);
+               writer.flush();
+            }
+         }
+      }
+      catch (IOException e) {
+         e.printStackTrace();
+      }
+      
+   }
 }
