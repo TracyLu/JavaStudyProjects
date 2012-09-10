@@ -10,6 +10,7 @@ import java.net.Socket;
 import junit.framework.Assert;
 import mockit.Mocked;
 import mockit.NonStrictExpectations;
+import net.madz.download.agent.ITelnetClient;
 import net.madz.download.agent.protocol.IRequestDeserializer;
 import net.madz.download.agent.protocol.IResponseSerializer;
 import net.madz.download.service.IService;
@@ -53,7 +54,7 @@ public class TelnetClientTest {
 		};
 
 		try {
-			final TelnetClient client = new TelnetClient(socket);
+			final ITelnetClient client = new TelnetClient(socket);
 			startClient(client);
 		} catch (IOException e) {
 			fail("IOException is not expected");
@@ -143,7 +144,7 @@ public class TelnetClientTest {
 			@Mocked final IService service) {
 		prepareResourceForPositiveCase(socket, service);
 
-		TelnetClient client = initClient(socket, deserializer, serializer,
+		ITelnetClient client = initClient(socket, deserializer, serializer,
 				service);
 		startClient(client);
 		try {
@@ -161,7 +162,7 @@ public class TelnetClientTest {
 			@Mocked final IResponseSerializer serializer,
 			@Mocked final IService service) {
 		prepareResourceForPositiveCase(socket, service);
-		TelnetClient client = initClient(socket, deserializer, serializer,
+		ITelnetClient client = initClient(socket, deserializer, serializer,
 				service);
 		startClient(client);
 		client.stop();
@@ -177,7 +178,7 @@ public class TelnetClientTest {
 
 	}
 
-	private TelnetClient initClient(final Socket socket,
+	private ITelnetClient initClient(final Socket socket,
 			final IRequestDeserializer deserializer,
 			final IResponseSerializer serializer, final IService service) {
 		TelnetClient client = null;
@@ -192,7 +193,7 @@ public class TelnetClientTest {
 		return client;
 	}
 
-	private void startClient(TelnetClient client) {
+	private void startClient(ITelnetClient client) {
 		client.start();
 	}
 
@@ -202,7 +203,7 @@ public class TelnetClientTest {
 			@Mocked final IResponseSerializer serializer,
 			@Mocked final IService service) {
 		prepareResourceForPositiveCase(socket, service);
-		TelnetClient client = initClient(socket, deserializer, serializer,
+		ITelnetClient client = initClient(socket, deserializer, serializer,
 				service);
 		Assert.assertEquals(false, client.isStarted());
 		startClient(client);

@@ -27,7 +27,7 @@ public class TelnetClient implements ITelnetClient {
 	private final BufferedReader reader;
 	private final PrintWriter writer;
 	private Thread listeningThread;
-	private volatile boolean started = false;
+	private boolean started = false;
 
 	// to be injected
 	private IRequestDeserializer deserializer;
@@ -53,14 +53,17 @@ public class TelnetClient implements ITelnetClient {
 		}
 	}
 
+	@Override
 	public void setDeserializer(IRequestDeserializer deserializer) {
 		this.deserializer = deserializer;
 	}
 
+	@Override
 	public void setSerializer(IResponseSerializer serializer) {
 		this.serializer = serializer;
 	}
 
+	@Override
 	public void setService(IService service) {
 		this.service = service;
 	}
