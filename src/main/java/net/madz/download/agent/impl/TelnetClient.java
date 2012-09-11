@@ -11,6 +11,10 @@ import net.madz.download.LogUtils;
 import net.madz.download.agent.ITelnetClient;
 import net.madz.download.agent.protocol.IRequestDeserializer;
 import net.madz.download.agent.protocol.IResponseSerializer;
+import net.madz.download.agent.protocol.impl.Commands;
+import net.madz.download.agent.protocol.impl.DeserializerFactory;
+import net.madz.download.agent.protocol.impl.SerializerFactory;
+import net.madz.download.agent.protocol.impl.ServiceFactory;
 import net.madz.download.service.IService;
 import net.madz.download.service.IServiceRequest;
 import net.madz.download.service.IServiceResponse;
@@ -74,7 +78,7 @@ public class TelnetClient implements ITelnetClient {
 			throw new IllegalStateException(SERVICE_IS_ALREADY_STARTED);
 		}
 
-		validatePrequesit();
+		// validatePrequesit();
 
 		listeningThread = allocatListeningThread();
 		listeningThread.start();
@@ -82,7 +86,7 @@ public class TelnetClient implements ITelnetClient {
 			try {
 				wait();
 			} catch (InterruptedException e) {
-			   LogUtils.error(TelnetClient.class, e);
+				LogUtils.error(TelnetClient.class, e);
 			}
 		}
 	}
@@ -101,12 +105,21 @@ public class TelnetClient implements ITelnetClient {
 						final String plainTextRequest = reader.readLine();
 						LogUtils.debug(TelnetClient.class, "Received request: "
 								+ plainTextRequest);
+						// Analyze the command
+						String commandName = parseCommand(plainTextRequest);
+						deserializer = DeserializerFactory
+								.getInstance(commandName);
+						service = ServiceFactory.getInstance(commandName);
+						serializer = SerializerFactory
+								.getInstance(commandName);
+
 						final IServiceRequest serviceRequest = deserializer
 								.unmarshall(plainTextRequest);
 						final IServiceResponse serviceResponse = service
 								.processRequest(serviceRequest);
 						final String plainTextResponse = serializer
 								.marshall(serviceResponse);
+
 						writer.println(plainTextResponse);
 						writer.flush();
 					}
@@ -124,6 +137,21 @@ public class TelnetClient implements ITelnetClient {
 			}
 
 		});
+	}
+
+	private String parseCommand(String plainTextRequest) {
+		if (null == plainTextRequest || 0 >= plainTextRequest.length()) {
+			throw new NullPointerException("Please input command.");
+		}
+		String[] split = plainTextRequest.split("\\s");
+		for (String item : split) {
+			System.out.println(item);
+		}
+		if (split.length <= 1) {
+			throw new IllegalStateException(
+					"Please use correct command syntax. example: iget help version");
+		}
+		return split[1];
 	}
 
 	private void validatePrequesit() {
@@ -148,7 +176,7 @@ public class TelnetClient implements ITelnetClient {
 			socket.close();
 		} catch (IOException ignored) {
 		}
-		
+
 	}
 
 	@Override

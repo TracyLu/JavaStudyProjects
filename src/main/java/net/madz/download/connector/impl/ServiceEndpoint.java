@@ -10,19 +10,22 @@ import net.madz.download.agent.ITelnetClient;
 import net.madz.download.agent.impl.TelnetClient;
 import net.madz.download.agent.protocol.impl.EchoDeserializer;
 import net.madz.download.agent.protocol.impl.EchoSerializer;
+import net.madz.download.agent.protocol.impl.HelpDeserializer;
+import net.madz.download.agent.protocol.impl.HelpSerializer;
 import net.madz.download.connector.IServiceEndpoint;
 import net.madz.download.service.EchoService;
+import net.madz.download.service.HelpService;
 
 public class ServiceEndpoint implements IServiceEndpoint {
 
-	private final EchoService service;
+	private final HelpService service;
 
 	private boolean started = false;
 	private Thread workingThread = null;
 
 	public ServiceEndpoint() {
 		super();
-		this.service = new EchoService();
+		this.service = new HelpService();
 	}
 
 	@Override
@@ -96,9 +99,10 @@ public class ServiceEndpoint implements IServiceEndpoint {
 		ITelnetClient client = null;
 		try {
 			client = new TelnetClient(socket);
-			client.setDeserializer(new EchoDeserializer());
-			client.setSerializer(new EchoSerializer());
-			client.setService(service);
+			
+//			client.setDeserializer(new HelpDeserializer());
+//			client.setSerializer(new HelpSerializer());
+//			client.setService(service);
 		} catch (IOException ignored) {
 			LogUtils.error(ServiceEndpoint.class, ignored);
 		}
