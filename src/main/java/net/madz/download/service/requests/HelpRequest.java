@@ -4,6 +4,8 @@ import net.madz.download.service.IServiceRequest;
 
 public class HelpRequest implements IServiceRequest {
 	private String commandName;
+	
+	
 
 	public HelpRequest(String commandName) {
 		this.commandName = commandName;

@@ -15,9 +15,15 @@ import net.madz.download.agent.protocol.impl.Commands;
 import net.madz.download.agent.protocol.impl.DeserializerFactory;
 import net.madz.download.agent.protocol.impl.SerializerFactory;
 import net.madz.download.agent.protocol.impl.ServiceFactory;
+import net.madz.download.agent.protocol.impl.Commands.command;
+import net.madz.download.service.HelpService;
 import net.madz.download.service.IService;
 import net.madz.download.service.IServiceRequest;
 import net.madz.download.service.IServiceResponse;
+import net.madz.download.service.ServiceHub;
+import net.madz.download.service.annotations.Arg;
+import net.madz.download.service.annotations.Command;
+import net.madz.download.service.annotations.Option;
 
 public class TelnetClient implements ITelnetClient {
 
@@ -105,11 +111,18 @@ public class TelnetClient implements ITelnetClient {
 						final String plainTextRequest = reader.readLine();
 						LogUtils.debug(TelnetClient.class, "Received request: "
 								+ plainTextRequest);
+						
+						
+						
 						// Analyze the command
 						String commandName = parseCommand(plainTextRequest);
+						
 						deserializer = DeserializerFactory
 								.getInstance(commandName);
-						service = ServiceFactory.getInstance(commandName);
+						service = ServiceHub.getService(commandName);
+						Class<? extends IService> serviceClassObj = service.getClass();
+						Command command = serviceClassObj.getAnnotation(Command.class);
+						boolean satisfied = checkCommand(plainTextRequest, command);
 						serializer = SerializerFactory
 								.getInstance(commandName);
 
@@ -134,6 +147,14 @@ public class TelnetClient implements ITelnetClient {
 					}
 				}
 
+			}
+
+			private boolean checkCommand(String plainTextRequest,
+					Command command) {
+				Option[] options = command.options();
+				Arg[] arguments = command.arguments();
+				System.out.println("=====");
+				return false;
 			}
 
 		});

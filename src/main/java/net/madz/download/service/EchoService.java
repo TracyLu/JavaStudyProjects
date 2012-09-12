@@ -1,8 +1,13 @@
 package net.madz.download.service;
 
+import net.madz.download.service.annotations.Arg;
+import net.madz.download.service.annotations.Command;
+import net.madz.download.service.annotations.Option;
 import net.madz.download.service.requests.EchoRequest;
 import net.madz.download.service.responses.EchoResponse;
 
+
+@Command(name = "echo", request = EchoRequest.class, arguments = { @Arg(name = "message") }, options = { @Option(shortName = "l", fullName = "lowerCase", description = "Echo service will return the lowerCase format message.") })
 public class EchoService implements IService {
 
 	@Override
