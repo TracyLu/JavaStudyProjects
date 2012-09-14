@@ -6,8 +6,7 @@ import net.madz.download.service.annotations.Option;
 import net.madz.download.service.requests.EchoRequest;
 import net.madz.download.service.responses.EchoResponse;
 
-
-@Command(name = "echo", request = EchoRequest.class, arguments = { @Arg(name = "message") }, options = { @Option(shortName = "l", fullName = "lowerCase", description = "Echo service will return the lowerCase format message.") })
+@Command(name = "echo", request = EchoRequest.class, arguments = { @Arg(name = "message") }, options = { @Option(shortName = "-l", fullName = "--lowerCase", description = "Echo message in lower case.") }, description = "Echo service will echo message.")
 public class EchoService implements IService {
 
 	@Override
@@ -30,7 +29,12 @@ public class EchoService implements IService {
 	@Override
 	public IServiceResponse processRequest(IServiceRequest request) {
 		if (request instanceof EchoRequest) {
-			return new EchoResponse(((EchoRequest) request).getMessage());
+			boolean lowerCase = ((EchoRequest) request).isLowercase();
+			String result = ((EchoRequest) request).getMessage();
+			if (lowerCase) {
+				result = result.toLowerCase();
+			}
+			return new EchoResponse(result);
 		} else {
 			return new EchoResponse(request.toString());
 		}

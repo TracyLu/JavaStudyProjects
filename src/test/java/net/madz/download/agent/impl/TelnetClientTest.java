@@ -2,14 +2,19 @@ package net.madz.download.agent.impl;
 
 import static org.junit.Assert.fail;
 
+import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.net.Socket;
+import java.net.UnknownHostException;
 
 import junit.framework.Assert;
 import mockit.Mocked;
 import mockit.NonStrictExpectations;
+import net.madz.download.MessageConsts;
 import net.madz.download.agent.ITelnetClient;
 import net.madz.download.agent.protocol.IRequestDeserializer;
 import net.madz.download.agent.protocol.IResponseSerializer;
@@ -26,7 +31,7 @@ public class TelnetClientTest {
 		} catch (IOException e) {
 			fail("IOException is not expected");
 		} catch (NullPointerException e) {
-			Assert.assertEquals(TelnetClient.SOCKET_CANNOT_BE_NULL,
+			Assert.assertEquals(MessageConsts.SOCKET_CANNOT_BE_NULL,
 					e.getMessage());
 			throw e;
 		}
@@ -59,7 +64,7 @@ public class TelnetClientTest {
 		} catch (IOException e) {
 			fail("IOException is not expected");
 		} catch (IllegalStateException e) {
-			Assert.assertEquals(TelnetClient.SOCKET_IS_NOT_CONNECTED,
+			Assert.assertEquals(MessageConsts.SOCKET_IS_NOT_CONNECTED,
 					e.getMessage());
 			throw e;
 		}
@@ -83,7 +88,7 @@ public class TelnetClientTest {
 			e.printStackTrace();
 		} catch (IllegalStateException ex) {
 			Assert.assertEquals(
-					TelnetClient.DESERIALIZER_SERIALIZER_SERVICE_SHOULD_BE_INITIALIZED,
+					MessageConsts.DESERIALIZER_SERIALIZER_SERVICE_SHOULD_BE_INITIALIZED,
 					ex.getMessage());
 			throw ex;
 		}
@@ -130,7 +135,7 @@ public class TelnetClientTest {
 			e.printStackTrace();
 		} catch (IllegalStateException ex) {
 			Assert.assertEquals(
-					TelnetClient.DESERIALIZER_SERIALIZER_SERVICE_SHOULD_BE_INITIALIZED,
+					MessageConsts.DESERIALIZER_SERIALIZER_SERVICE_SHOULD_BE_INITIALIZED,
 					ex.getMessage());
 			throw ex;
 		}
@@ -151,7 +156,7 @@ public class TelnetClientTest {
 			startClient(client);
 			fail("Not expected to be here.");
 		} catch (IllegalStateException ex) {
-			Assert.assertEquals(TelnetClient.SERVICE_IS_ALREADY_STARTED,
+			Assert.assertEquals(MessageConsts.SERVICE_IS_ALREADY_STARTED,
 					ex.getMessage());
 		}
 	}
@@ -172,7 +177,7 @@ public class TelnetClientTest {
 			client.stop();
 			fail("Not expected to be here");
 		} catch (IllegalStateException ex) {
-			Assert.assertEquals(TelnetClient.SERVICE_IS_NOT_STARTED_YET,
+			Assert.assertEquals(MessageConsts.SERVICE_IS_NOT_STARTED_YET,
 					ex.getMessage());
 		}
 
@@ -209,5 +214,4 @@ public class TelnetClientTest {
 		startClient(client);
 		Assert.assertEquals(true, client.isStarted());
 	}
-
 }

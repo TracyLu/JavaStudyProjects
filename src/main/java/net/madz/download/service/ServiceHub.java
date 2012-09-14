@@ -1,12 +1,13 @@
 package net.madz.download.service;
 
+import java.lang.annotation.Annotation;
 import java.util.HashMap;
 
 import net.madz.download.LogUtils;
 import net.madz.download.service.annotations.Command;
 import net.madz.download.service.annotations.Services;
 
-@Services({ EchoService.class, HelpService.class })
+@Services({ EchoService.class, HelpService.class, CreateTaskService.class })
 public class ServiceHub {
 	private static ServiceHub serviceHub;
 	private final static HashMap<String, IService> servicesRegistry = new HashMap<String, IService>();
@@ -14,8 +15,9 @@ public class ServiceHub {
 	private ServiceHub() {
 		Services services = ServiceHub.class.getAnnotation(Services.class);
 		Class<? extends IService>[] serviceClass = services.value();
+
 		for (Class<? extends IService> item : serviceClass) {
-			Command command = item.getClass().getAnnotation(Command.class);
+			Command command = item.getAnnotation(Command.class);
 			try {
 				IService serviceObj = item.newInstance();
 				serviceObj.start();
@@ -40,4 +42,9 @@ public class ServiceHub {
 		return servicesRegistry.get(commandName);
 
 	}
+
+	public static HashMap<String, IService> getServicesregistry() {
+		return servicesRegistry;
+	}
+	
 }

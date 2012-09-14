@@ -8,14 +8,13 @@ import java.io.PrintWriter;
 import java.net.Socket;
 
 import net.madz.download.LogUtils;
+import net.madz.download.MessageConsts;
 import net.madz.download.agent.ITelnetClient;
 import net.madz.download.agent.protocol.IRequestDeserializer;
 import net.madz.download.agent.protocol.IResponseSerializer;
-import net.madz.download.agent.protocol.impl.Commands;
-import net.madz.download.agent.protocol.impl.DeserializerFactory;
-import net.madz.download.agent.protocol.impl.SerializerFactory;
-import net.madz.download.agent.protocol.impl.ServiceFactory;
-import net.madz.download.agent.protocol.impl.Commands.command;
+import net.madz.download.agent.protocol.impl.RawCommand;
+import net.madz.download.agent.protocol.impl.RequestDeserializer;
+import net.madz.download.agent.protocol.impl.ResponseSerializer;
 import net.madz.download.service.HelpService;
 import net.madz.download.service.IService;
 import net.madz.download.service.IServiceRequest;
@@ -24,14 +23,9 @@ import net.madz.download.service.ServiceHub;
 import net.madz.download.service.annotations.Arg;
 import net.madz.download.service.annotations.Command;
 import net.madz.download.service.annotations.Option;
+import net.madz.download.service.requests.HelpRequest;
 
 public class TelnetClient implements ITelnetClient {
-
-	static final String SERVICE_IS_ALREADY_STARTED = "Service is already started.";
-	static final String SERVICE_IS_NOT_STARTED_YET = "Service is not started or stopped.";
-	static final String DESERIALIZER_SERIALIZER_SERVICE_SHOULD_BE_INITIALIZED = "Deserializer, serializer, service should be initialized.";
-	static final String SOCKET_CANNOT_BE_NULL = "Socket cannot be null.";
-	static final String SOCKET_IS_NOT_CONNECTED = "Socket is not connected.";
 
 	private final Socket socket;
 	private final BufferedReader reader;
@@ -56,10 +50,11 @@ public class TelnetClient implements ITelnetClient {
 
 	private void validateSocket() {
 		if (null == this.socket) {
-			throw new NullPointerException(SOCKET_CANNOT_BE_NULL);
+			throw new NullPointerException(MessageConsts.SOCKET_CANNOT_BE_NULL);
 		}
 		if (!this.socket.isConnected()) {
-			throw new IllegalStateException(SOCKET_IS_NOT_CONNECTED);
+			throw new IllegalStateException(
+					MessageConsts.SOCKET_IS_NOT_CONNECTED);
 		}
 	}
 
@@ -81,7 +76,8 @@ public class TelnetClient implements ITelnetClient {
 	@Override
 	public synchronized void start() {
 		if (this.isStarted()) {
-			throw new IllegalStateException(SERVICE_IS_ALREADY_STARTED);
+			throw new IllegalStateException(
+					MessageConsts.SERVICE_IS_ALREADY_STARTED);
 		}
 
 		// validatePrequesit();
@@ -108,33 +104,65 @@ public class TelnetClient implements ITelnetClient {
 				}
 				try {
 					while (!Thread.currentThread().isInterrupted()) {
+						IServiceRequest serviceRequest;
+						final IServiceResponse serviceResponse;
+						final String plainTextResponse;
+
 						final String plainTextRequest = reader.readLine();
 						LogUtils.debug(TelnetClient.class, "Received request: "
 								+ plainTextRequest);
-						
-						
-						
-						// Analyze the command
-						String commandName = parseCommand(plainTextRequest);
-						
-						deserializer = DeserializerFactory
-								.getInstance(commandName);
-						service = ServiceHub.getService(commandName);
-						Class<? extends IService> serviceClassObj = service.getClass();
-						Command command = serviceClassObj.getAnnotation(Command.class);
-						boolean satisfied = checkCommand(plainTextRequest, command);
-						serializer = SerializerFactory
-								.getInstance(commandName);
 
-						final IServiceRequest serviceRequest = deserializer
-								.unmarshall(plainTextRequest);
-						final IServiceResponse serviceResponse = service
-								.processRequest(serviceRequest);
-						final String plainTextResponse = serializer
-								.marshall(serviceResponse);
+						// Step 1: Analyze the command string and generate
+						// RawCommand
+						//
+						RawCommand rawCommand = parseCommand(plainTextRequest);
 
-						writer.println(plainTextResponse);
-						writer.flush();
+						// Step 2: Validate raw command via Command annotation
+						//
+						service = ServiceHub.getService(rawCommand.getName());
+						Class<? extends IService> serviceClassObj = service
+								.getClass();
+						Command command = serviceClassObj
+								.getAnnotation(Command.class);
+						boolean satisfied = checkCommand(rawCommand, command);
+
+						deserializer = new RequestDeserializer();
+
+						serializer = new ResponseSerializer();
+
+						// For not satisfied, there are 2 scenarios:
+						// 1. random characters, wrong or null
+						// 2. correct command, but wrong arguments or options
+						//
+						if (!satisfied) {
+							HelpRequest helpRequest = new HelpRequest();
+							if (!(service instanceof HelpService)) {
+								service = new HelpService();
+								helpRequest.setCommandName(rawCommand.getName());
+							} else {
+								helpRequest.setCommandName("");
+							}
+							serviceRequest = helpRequest;
+							serviceResponse = service
+									.processRequest(serviceRequest);
+							plainTextResponse = serviceResponse.toString();
+
+							writer.println(plainTextResponse);
+							writer.flush();
+
+						} else {
+							serviceRequest = deserializer
+									.unmarshall(plainTextRequest);
+							IServiceRequest request = new RequestDeserializer()
+									.unmarshall(plainTextRequest);
+							serviceResponse = service
+									.processRequest(serviceRequest);
+							plainTextResponse = serializer
+									.marshall(serviceResponse);
+
+							writer.println(plainTextResponse);
+							writer.flush();
+						}
 					}
 				} catch (IOException e) {
 					LogUtils.error(TelnetClient.class, e);
@@ -149,39 +177,67 @@ public class TelnetClient implements ITelnetClient {
 
 			}
 
-			private boolean checkCommand(String plainTextRequest,
-					Command command) {
+			private boolean checkCommand(RawCommand rawCommand, Command command) {
 				Option[] options = command.options();
 				Arg[] arguments = command.arguments();
-				System.out.println("=====");
-				return false;
+				for (String item : rawCommand.getOptions()) {
+					boolean contained = false;
+					for (Option expected : options) {
+						if (item.equalsIgnoreCase(expected.fullName())
+								|| expected.shortName().equalsIgnoreCase(item)) {
+							contained = true;
+						}
+					}
+					if (contained == false) {
+						return false;
+					}
+				}
+				if (arguments.length != rawCommand.getArgs().size()) {
+					return false;
+				}
+				return true;
 			}
 
 		});
 	}
 
-	private String parseCommand(String plainTextRequest) {
+	public static RawCommand parseCommand(String plainTextRequest) {
+		RawCommand command = new RawCommand();
 		if (null == plainTextRequest || 0 >= plainTextRequest.length()) {
-			throw new NullPointerException("Please input command.");
+			command.setName("help");
+			return command;
 		}
-		String[] split = plainTextRequest.split("\\s");
-		for (String item : split) {
-			System.out.println(item);
+		String[] results = plainTextRequest.split("\\s+");
+		if (results.length <= 0) {
+			command.setName("help");
+			return command;
 		}
-		if (split.length <= 1) {
-			throw new IllegalStateException(
-					"Please use correct command syntax. example: iget help version");
+		IService<?> service = ServiceHub.getService(results[0]);
+		if (null == service) {
+			command.setName("help");
+			return command;
 		}
-		return split[1];
+
+		command.setName(results[0]);
+		for (int i = 1; i < results.length; i++) {
+			if (results[i].startsWith("-") || results[i].startsWith("--")) {
+				command.addOption(results[i]);
+			} else {
+				command.addArg(results[i]);
+			}
+		}
+
+		return command;
 	}
 
 	private void validatePrequesit() {
 		if (null == deserializer || null == serializer || null == service) {
 			throw new IllegalStateException(
-					DESERIALIZER_SERIALIZER_SERVICE_SHOULD_BE_INITIALIZED);
+					MessageConsts.DESERIALIZER_SERIALIZER_SERVICE_SHOULD_BE_INITIALIZED);
 		}
 		if (!service.isStarted()) {
-			throw new IllegalStateException(SERVICE_IS_NOT_STARTED_YET);
+			throw new IllegalStateException(
+					MessageConsts.SERVICE_IS_NOT_STARTED_YET);
 		}
 		validateSocket();
 	}
@@ -203,7 +259,8 @@ public class TelnetClient implements ITelnetClient {
 	@Override
 	public synchronized void stop() {
 		if (!this.isStarted()) {
-			throw new IllegalStateException(SERVICE_IS_NOT_STARTED_YET);
+			throw new IllegalStateException(
+					MessageConsts.SERVICE_IS_NOT_STARTED_YET);
 		}
 		listeningThread.interrupt();
 		try {

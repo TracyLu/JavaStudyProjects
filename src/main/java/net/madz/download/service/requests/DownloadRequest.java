@@ -1,39 +1,22 @@
 package net.madz.download.service.requests;
+
+import java.net.MalformedURLException;
 import java.net.URL;
 
 import net.madz.download.service.IServiceRequest;
 
-
 public final class DownloadRequest implements IServiceRequest {
-	private String commandType;
 	private URL url;
-	private URL referencedUrl;
 	private String folder;
 	private String filename;
-	private int threadNumber;
-
-	public String getCommandType() {
-		return commandType;
-	}
-
-	public void setCommandType(String commandType) {
-		this.commandType = commandType;
-	}
+	private int threadNumber = 10;
 
 	public URL getUrl() {
 		return url;
 	}
 
-	public void setUrl(URL url) {
-		this.url = url;
-	}
-
-	public URL getReferencedUrl() {
-		return referencedUrl;
-	}
-
-	public void setReferencedUrl(URL referencedUrl) {
-		this.referencedUrl = referencedUrl;
+	public void setUrl(String url) throws MalformedURLException {
+		this.url = new URL(url);
 	}
 
 	public String getFolder() {
