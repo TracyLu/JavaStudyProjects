@@ -112,6 +112,18 @@ public class TelnetClient implements ITelnetClient {
 						LogUtils.debug(TelnetClient.class, "Received request: "
 								+ plainTextRequest);
 
+						/**
+						 * Code Review Comments:
+						 * 
+						 * There is a OO Design Principle, SRP, which can be referred from:
+						 * http://en.wikipedia.org/wiki/Single_responsibility_principle
+						 * 
+						 * TelnetClient Class was initially designed for delegating communication 
+						 * between Telnet Application and Download Service Process, which will including thread/process synchronization.
+						 * 
+						 * So the commandLine parsing, validating, constructing RawCommand and related stuff should be moved
+						 * into RequestDeserializer Class. So that this class would be much more simplified.
+						 */
 						// Step 1: Analyze the command string and generate
 						// RawCommand
 						//
