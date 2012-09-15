@@ -1,12 +1,15 @@
-package net.madz.download.service;
+package net.madz.download.service.services;
 
+import net.madz.download.service.IService;
+import net.madz.download.service.IServiceRequest;
+import net.madz.download.service.IServiceResponse;
 import net.madz.download.service.annotations.Arg;
 import net.madz.download.service.annotations.Command;
 import net.madz.download.service.annotations.Option;
 import net.madz.download.service.requests.EchoRequest;
 import net.madz.download.service.responses.EchoResponse;
 
-@Command(name = "echo", request = EchoRequest.class, arguments = { @Arg(name = "message") }, options = { @Option(shortName = "-l", fullName = "--lowerCase", description = "Echo message in lower case.") }, description = "Echo service will echo message.")
+@Command(commandName = "echo", request = EchoRequest.class, arguments = { @Arg(name = "message") }, options = { @Option(shortName = "-l", fullName = "--lowerCase", description = "Echo message in lower case.") }, description = "Echo service will echo message.")
 public class EchoService implements IService {
 
 	@Override

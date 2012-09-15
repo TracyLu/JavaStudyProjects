@@ -1,23 +1,26 @@
-package net.madz.download.service;
+package net.madz.download.service.services;
 
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map.Entry;
 
+import net.madz.download.service.IService;
+import net.madz.download.service.IServiceResponse;
+import net.madz.download.service.ServiceHub;
 import net.madz.download.service.annotations.Arg;
 import net.madz.download.service.annotations.Command;
 import net.madz.download.service.annotations.Option;
 import net.madz.download.service.requests.HelpRequest;
 import net.madz.download.service.responses.HelpResponse;
 
-@Command(name = "help", request = HelpRequest.class, arguments = { @Arg(name = "commandName", description = "command name, short name or full name are all ok.") }, options = {}, description = "Display all the commands and simple description.")
+@Command(commandName = "help", request = HelpRequest.class, arguments = { @Arg(name = "argCommandName", description = "command name, short name or full name are all ok.") }, options = {}, description = "Display all the commands and simple description.")
 public class HelpService implements IService<HelpRequest> {
 
 	private static ServiceHub serviceHub = ServiceHub.getInstance();
 
 	public static HelpService getInstance(String commandName) {
 		if (!commandName.equalsIgnoreCase(HelpService.class.getAnnotation(
-				Command.class).name())) {
+				Command.class).commandName())) {
 
 		}
 		return (HelpService) serviceHub.getService(commandName);
@@ -45,16 +48,16 @@ public class HelpService implements IService<HelpRequest> {
 	public IServiceResponse processRequest(HelpRequest request) {
 		HelpResponse response = new HelpResponse();
 		StringBuilder description = new StringBuilder();
-		if (null == request.getCommandName()
-				|| 0 >= request.getCommandName().length()) {
+		if (null == request.getArgCommandName()
+				|| 0 >= request.getArgCommandName().length()) {
 			iterateAllCommands(response, description);
 		} else {
 			IService<?> service = null;
-			service = ServiceHub.getService(request.getCommandName());
+			service = ServiceHub.getService(request.getArgCommandName());
 			Command command = service.getClass().getAnnotation(Command.class);
 			description.append("NAME");
 			description.append("\n");
-			description.append("\t" + command.name() + " - ");
+			description.append("\t" + command.commandName() + " - ");
 			description.append(command.description());
 			description.append("\n");
 			if (command.options().length > 0) {
@@ -84,7 +87,7 @@ public class HelpService implements IService<HelpRequest> {
 					description.append("\n");
 				}
 			}
-			response.setCommandName(request.getCommandName());
+			response.setCommandName(request.getArgCommandName());
 			response.setDescription(description.toString());
 		}
 
@@ -101,10 +104,10 @@ public class HelpService implements IService<HelpRequest> {
 			Entry<String, IService> next = iterator.next();
 			String key = next.getKey();
 			IService value = next.getValue();
-			Command annotation = value.getClass().getAnnotation(Command.class);
-			description.append(annotation.name());
+			Command command = value.getClass().getAnnotation(Command.class);
+			description.append(command.commandName());
 			description.append("\t");
-			description.append(annotation.description());
+			description.append(command.description());
 			description.append("\n");
 		}
 		response.setCommandName("Help");

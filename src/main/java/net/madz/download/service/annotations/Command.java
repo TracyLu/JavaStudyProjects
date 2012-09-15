@@ -15,7 +15,7 @@ import net.madz.download.service.IServiceRequest;
 @Retention(value = RetentionPolicy.RUNTIME)
 public @interface Command {
 
-	String name();
+	String commandName();
 
 	Class<? extends IServiceRequest> request();
 

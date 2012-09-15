@@ -1,4 +1,4 @@
-package net.madz.download.service;
+package net.madz.download.service.services;
 
 import java.io.File;
 import java.io.IOException;
@@ -14,17 +14,19 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import net.madz.download.service.IService;
+import net.madz.download.service.IServiceResponse;
 import net.madz.download.service.annotations.Arg;
 import net.madz.download.service.annotations.Command;
 import net.madz.download.service.annotations.Option;
-import net.madz.download.service.requests.DownloadRequest;
-import net.madz.download.service.responses.DownloadResponse;
+import net.madz.download.service.requests.CreateTaskRequest;
+import net.madz.download.service.responses.CreateTaskResponse;
 
 @Command(arguments = {
 		@Arg(name = "url", description = "the address of remote file."),
 		@Arg(name = "folder", description = "where to store the file"),
-		@Arg(name = "filename", description = "new file name.") }, name = "create-task", options = { @Option(description = "thread number", fullName = "--threadNumber", shortName = "-n") }, request = DownloadRequest.class, description = "")
-public class CreateTaskService implements IService<DownloadRequest> {
+		@Arg(name = "filename", description = "new file name.") }, commandName = "create-task", options = { @Option(description = "thread number", fullName = "--threadNumber", shortName = "-n") }, request = CreateTaskRequest.class, description = "This command is responsible for downloding specified url resource.")
+public class CreateTaskService implements IService<CreateTaskRequest> {
 	private ExecutorService pool; // We use thread pool
 	private Lock poolLock = new ReentrantLock();
 	private Condition allDone = poolLock.newCondition();
@@ -50,15 +52,21 @@ public class CreateTaskService implements IService<DownloadRequest> {
 	}
 
 	@Override
-	public IServiceResponse processRequest(DownloadRequest request) {
-		URL url = request.getUrl();
+	public IServiceResponse processRequest(CreateTaskRequest request) {
+		URL url = null;
+		try {
+			url = new URL(request.getUrl());
+		} catch (MalformedURLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		String folder = request.getFolder();
 		String filename = request.getFilename();
 		int threadNumber = request.getThreadNumber();
 		this.pool = Executors.newFixedThreadPool(threadNumber);
 		file = new File(folder, filename);
 		download(url, threadNumber);
-		DownloadResponse downloadResponse = new DownloadResponse();
+		CreateTaskResponse downloadResponse = new CreateTaskResponse();
 		downloadResponse.setMessage("You task is downloading");
 		return downloadResponse;
 	}

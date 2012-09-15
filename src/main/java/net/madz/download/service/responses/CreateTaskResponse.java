@@ -2,7 +2,7 @@ package net.madz.download.service.responses;
 
 import net.madz.download.service.IServiceResponse;
 
-public class DownloadResponse implements IServiceResponse {
+public class CreateTaskResponse implements IServiceResponse {
 	private String message;
 
 	public String getMessage() {

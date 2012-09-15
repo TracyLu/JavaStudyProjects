@@ -1,11 +1,13 @@
 package net.madz.download.service;
 
-import java.lang.annotation.Annotation;
 import java.util.HashMap;
 
 import net.madz.download.LogUtils;
 import net.madz.download.service.annotations.Command;
 import net.madz.download.service.annotations.Services;
+import net.madz.download.service.services.CreateTaskService;
+import net.madz.download.service.services.EchoService;
+import net.madz.download.service.services.HelpService;
 
 @Services({ EchoService.class, HelpService.class, CreateTaskService.class })
 public class ServiceHub {
@@ -21,7 +23,7 @@ public class ServiceHub {
 			try {
 				IService serviceObj = item.newInstance();
 				serviceObj.start();
-				servicesRegistry.put(command.name(), serviceObj);
+				servicesRegistry.put(command.commandName(), serviceObj);
 			} catch (InstantiationException ignored) {
 				LogUtils.error(ServiceHub.class, ignored);
 			} catch (IllegalAccessException ignored) {

@@ -39,4 +39,8 @@ public class EchoRequest implements IServiceRequest {
 		this.message = message;
 	}
 
+	@Override
+	public void validate() {
+	}
+
 }
