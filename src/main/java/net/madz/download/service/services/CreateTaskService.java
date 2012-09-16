@@ -19,6 +19,9 @@ import net.madz.download.service.IServiceResponse;
 import net.madz.download.service.annotations.Arg;
 import net.madz.download.service.annotations.Command;
 import net.madz.download.service.annotations.Option;
+import net.madz.download.service.metadata.DownloadTask;
+import net.madz.download.service.metadata.MetaManager;
+import net.madz.download.service.metadata.TaskState;
 import net.madz.download.service.requests.CreateTaskRequest;
 import net.madz.download.service.responses.CreateTaskResponse;
 
@@ -32,6 +35,8 @@ public class CreateTaskService implements IService<CreateTaskRequest> {
 	private Condition allDone = poolLock.newCondition();
 	private int doneNumber = 0;
 	private static File file; // Point to the storage file
+	private File logFile;
+	private DownloadTask task;
 
 	@Override
 	public void start() {
@@ -57,7 +62,6 @@ public class CreateTaskService implements IService<CreateTaskRequest> {
 		try {
 			url = new URL(request.getUrl());
 		} catch (MalformedURLException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		String folder = request.getFolder();
@@ -65,6 +69,15 @@ public class CreateTaskService implements IService<CreateTaskRequest> {
 		int threadNumber = request.getThreadNumber();
 		this.pool = Executors.newFixedThreadPool(threadNumber);
 		file = new File(folder, filename);
+		logFile = new File("./meta/downloading/" + file.getName() + "_log");
+
+		task = new DownloadTask();
+		task.setUrl(url);
+		task.setReferURL(null);
+		task.setFolder(new File(folder));
+		task.setFileName(filename);
+		task.setThreadNumber(new Integer(threadNumber).byteValue());
+
 		download(url, threadNumber);
 		CreateTaskResponse downloadResponse = new CreateTaskResponse();
 		downloadResponse.setMessage("You task is downloading");
@@ -75,6 +88,7 @@ public class CreateTaskService implements IService<CreateTaskRequest> {
 		URLConnection openConnection = null;
 		int totalLength = 0;
 		int partLength = 0;
+		boolean resumable = false;
 		try {
 			openConnection = url.openConnection();
 			openConnection.connect();
@@ -84,10 +98,19 @@ public class CreateTaskService implements IService<CreateTaskRequest> {
 			e.printStackTrace();
 			return false;
 		}
+		try {
+			resumable = checkResumable(url);
+		} catch (IOException e1) {
+			e1.printStackTrace();
+		}
+
+		task.setResumable(resumable);
+		task.setTotalLength(totalLength);
+		task.setState((byte) TaskState.Started);
+		MetaManager.serialize(task, logFile);
 		for (int i = 0; i < threadNumber; i++) {
 			final int seq = i;
 			final int finalPartLength = partLength;
-			final File logfile = new File(file.getAbsolutePath() + "_log");
 			final URL finalURL = url;
 			if (i < threadNumber - 1) {
 				pool.execute(new Runnable() {
@@ -95,7 +118,7 @@ public class CreateTaskService implements IService<CreateTaskRequest> {
 					@Override
 					public void run() {
 						download(finalURL, finalPartLength * seq,
-								finalPartLength * (seq + 1) - 1, logfile, seq);
+								finalPartLength * (seq + 1) - 1, logFile, seq);
 
 					}
 				});
@@ -105,7 +128,7 @@ public class CreateTaskService implements IService<CreateTaskRequest> {
 					@Override
 					public void run() {
 						download(finalURL, finalPartLength * seq,
-								finalTotalLength - 1, logfile, seq);
+								finalTotalLength - 1, logFile, seq);
 					}
 				});
 			}
@@ -128,6 +151,19 @@ public class CreateTaskService implements IService<CreateTaskRequest> {
 		}
 		return true;
 
+	}
+
+	private boolean checkResumable(URL url) throws IOException {
+		boolean resumable = false;
+		URLConnection openConnection;
+		openConnection = url.openConnection();
+		openConnection.setRequestProperty("RANGE", "bytes=" + 0 + "-" + 0);
+		openConnection.connect();
+		String acceptRanges = openConnection.getHeaderField("Accept-Ranges");
+		if ("bytes".equalsIgnoreCase(acceptRanges)) {
+			resumable = true;
+		}
+		return resumable;
 	}
 
 	private void download(URL url, int start, int end, File logfile, int seq) {

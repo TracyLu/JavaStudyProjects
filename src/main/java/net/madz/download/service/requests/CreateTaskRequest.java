@@ -12,6 +12,7 @@ import net.madz.download.service.exception.ErrorMessage;
 public final class CreateTaskRequest implements IServiceRequest {
 	private String commandName;
 	private String url;
+	private String referURL = "http://www.baidu.com"; //make a faked refer URL
 	private String folder;
 	private String filename;
 	private int threadNumber = 10;
@@ -30,6 +31,14 @@ public final class CreateTaskRequest implements IServiceRequest {
 
 	public void setUrl(String url) {
 		this.url = url;
+	}
+
+	public String getReferURL() {
+		return referURL;
+	}
+
+	public void setReferURL(String referURL) {
+		this.referURL = referURL;
 	}
 
 	public String getFolder() {
