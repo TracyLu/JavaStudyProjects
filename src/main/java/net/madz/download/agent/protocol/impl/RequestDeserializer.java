@@ -40,6 +40,36 @@ public class RequestDeserializer {
 		//
 		Class<? extends IServiceRequest> requestClass = command.request();
 		IServiceRequest serviceRequest = null;
+		/**
+		 * Review Comments:
+		 * 
+		 * ISSUE: Too Many Exceptions are handled with e.printStackTrace();
+		 * 
+		 * Below Java Version 7, if a method signed with several checked exceptions,
+		 * and if there is no special handling logics for each exception, such as:
+		 * 
+		 *  catch (Exception e) {
+		 *      LogUtils.error(e);
+		 *      //ignore this exception;
+		 *  }
+		 *  
+		 *  or each exception needs a special handling logic, then it's better to provide:
+		 *  catch (Exception e) {
+		 *      handleException(e);
+		 *  }
+		 *  
+		 *  private void handleException(Excetion e) {
+		 *    if (e instanceof XXXXException) {
+		 *        ...
+		 *    } else if (e instanceof YYYYYException) {
+		 *        ...
+		 *    }
+		 *  }
+		 *  
+		 *  So the goal is to make the source code much more neat and clean. 
+		 *  
+		 *  All of the statements within a code block, should be same level.
+		 */
 		try {
 			serviceRequest = requestClass.newInstance();
 		} catch (InstantiationException e) {
