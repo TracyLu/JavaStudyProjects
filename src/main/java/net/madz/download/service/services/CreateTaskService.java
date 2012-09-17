@@ -59,8 +59,10 @@ public class CreateTaskService implements IService<CreateTaskRequest> {
 	@Override
 	public IServiceResponse processRequest(CreateTaskRequest request) {
 		URL url = null;
+		URL referURL = null;
 		try {
 			url = new URL(request.getUrl());
+			referURL = new URL(request.getReferURL());
 		} catch (MalformedURLException e) {
 			e.printStackTrace();
 		}
@@ -73,7 +75,7 @@ public class CreateTaskService implements IService<CreateTaskRequest> {
 
 		task = new DownloadTask();
 		task.setUrl(url);
-		task.setReferURL(null);
+		task.setReferURL(referURL);
 		task.setFolder(new File(folder));
 		task.setFileName(filename);
 		task.setThreadNumber(new Integer(threadNumber).byteValue());
@@ -108,6 +110,7 @@ public class CreateTaskService implements IService<CreateTaskRequest> {
 		task.setTotalLength(totalLength);
 		task.setState((byte) TaskState.Started);
 		MetaManager.serialize(task, logFile);
+		MetaManager.deserialize(logFile);
 		for (int i = 0; i < threadNumber; i++) {
 			final int seq = i;
 			final int finalPartLength = partLength;
