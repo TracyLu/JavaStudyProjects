@@ -5,7 +5,8 @@ import java.lang.annotation.RetentionPolicy;
 
 @Retention(value = RetentionPolicy.RUNTIME)
 public @interface Arg {
-	String name();
 
-	String description() default "";
+    String name();
+
+    String description() default "";
 }

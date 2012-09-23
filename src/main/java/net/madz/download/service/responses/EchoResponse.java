@@ -4,20 +4,19 @@ import net.madz.download.service.IServiceResponse;
 
 public class EchoResponse implements IServiceResponse {
 
-	private final String echoMessage;
+    private final String echoMessage;
 
-	public EchoResponse(String echoMessage) {
-		super();
-		this.echoMessage = echoMessage;
-	}
+    public EchoResponse(String echoMessage) {
+        super();
+        this.echoMessage = echoMessage;
+    }
 
-	public String getEchoMessage() {
-		return echoMessage;
-	}
+    public String getEchoMessage() {
+        return echoMessage;
+    }
 
-	@Override
-	public String toString() {
-		return "EchoResponse [echoMessage=" + echoMessage + "]";
-	}
-
+    @Override
+    public String toString() {
+        return "EchoResponse [echoMessage=" + echoMessage + "]";
+    }
 }

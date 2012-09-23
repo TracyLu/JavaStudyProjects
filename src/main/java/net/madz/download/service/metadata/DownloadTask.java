@@ -5,96 +5,95 @@ import java.net.URL;
 import java.util.List;
 
 public final class DownloadTask {
-	private URL url;
-	private URL referURL;
-	private File folder;
-	private String fileName;
-	private long totalLength;
-	private int segmentsNumber;
-	private boolean resumable;
-	private byte threadNumber;
-	private byte state;
 
-	private List<Segment> segments;
+    private URL url;
+    private URL referURL;
+    private File folder;
+    private String fileName;
+    private long totalLength;
+    private int segmentsNumber;
+    private boolean resumable;
+    private byte threadNumber;
+    private byte state;
+    private List<Segment> segments;
 
-	public URL getUrl() {
-		return url;
-	}
+    public URL getUrl() {
+        return url;
+    }
 
-	public void setUrl(URL url) {
-		this.url = url;
-	}
+    public void setUrl(URL url) {
+        this.url = url;
+    }
 
-	public URL getReferURL() {
-		return referURL;
-	}
+    public URL getReferURL() {
+        return referURL;
+    }
 
-	public void setReferURL(URL referURL) {
-		this.referURL = referURL;
-	}
+    public void setReferURL(URL referURL) {
+        this.referURL = referURL;
+    }
 
-	public File getFolder() {
-		return folder;
-	}
+    public File getFolder() {
+        return folder;
+    }
 
-	public void setFolder(File folder) {
-		this.folder = folder;
-	}
+    public void setFolder(File folder) {
+        this.folder = folder;
+    }
 
-	public String getFileName() {
-		return fileName;
-	}
+    public String getFileName() {
+        return fileName;
+    }
 
-	public void setFileName(String fileName) {
-		this.fileName = fileName;
-	}
+    public void setFileName(String fileName) {
+        this.fileName = fileName;
+    }
 
-	public long getTotalLength() {
-		return totalLength;
-	}
+    public long getTotalLength() {
+        return totalLength;
+    }
 
-	public void setTotalLength(long totalLength) {
-		this.totalLength = totalLength;
-	}
+    public void setTotalLength(long totalLength) {
+        this.totalLength = totalLength;
+    }
 
-	public int getSegmentsNumber() {
-		return segmentsNumber;
-	}
+    public int getSegmentsNumber() {
+        return segmentsNumber;
+    }
 
-	public void setSegmentsNumber(int segmentsNumber) {
-		this.segmentsNumber = segmentsNumber;
-	}
+    public void setSegmentsNumber(int segmentsNumber) {
+        this.segmentsNumber = segmentsNumber;
+    }
 
-	public boolean isResumable() {
-		return resumable;
-	}
+    public boolean isResumable() {
+        return resumable;
+    }
 
-	public void setResumable(boolean resumable) {
-		this.resumable = resumable;
-	}
+    public void setResumable(boolean resumable) {
+        this.resumable = resumable;
+    }
 
-	public byte getThreadNumber() {
-		return threadNumber;
-	}
+    public byte getThreadNumber() {
+        return threadNumber;
+    }
 
-	public void setThreadNumber(byte threadNumber) {
-		this.threadNumber = threadNumber;
-	}
+    public void setThreadNumber(byte threadNumber) {
+        this.threadNumber = threadNumber;
+    }
 
-	public byte getState() {
-		return state;
-	}
+    public byte getState() {
+        return state;
+    }
 
-	public void setState(byte state) {
-		this.state = state;
-	}
+    public void setState(byte state) {
+        this.state = state;
+    }
 
-	public List<Segment> getSegments() {
-		return segments;
-	}
+    public List<Segment> getSegments() {
+        return segments;
+    }
 
-	public void setSegments(List<Segment> segments) {
-		this.segments = segments;
-	}
-	
+    public void setSegments(List<Segment> segments) {
+        this.segments = segments;
+    }
 }

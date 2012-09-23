@@ -8,6 +8,5 @@ import net.madz.download.service.IService;
 @Retention(value = RetentionPolicy.RUNTIME)
 public @interface Services {
 
-	Class<? extends IService>[] value();
-
+    Class<? extends IService>[] value();
 }

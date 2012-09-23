@@ -24,5 +24,11 @@
 			<version>4.8.1</version>
 			<scope>provided</scope>
 		</dependency>
+		<dependency>
+			<groupId>net.madz</groupId>
+			<artifactId>net.madz.lifecycle</artifactId>
+			<version>0.0.1-SNAPSHOT</version>
+			<scope>provided</scope>
+		</dependency>
 	</dependencies>
 </project>

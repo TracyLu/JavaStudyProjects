@@ -5,90 +5,86 @@ import java.net.MalformedURLException;
 import java.net.URL;
 
 import net.madz.download.service.IServiceRequest;
-import net.madz.download.service.annotations.Command;
 import net.madz.download.service.exception.ErrorException;
 import net.madz.download.service.exception.ErrorMessage;
 
 public final class CreateTaskRequest implements IServiceRequest {
-	private String commandName;
-	private String url;
-	private String referURL = "http://www.baidu.com"; //make a faked refer URL
-	private String folder;
-	private String filename;
-	private int threadNumber = 10;
 
-	public String getCommandName() {
-		return commandName;
-	}
+    private String commandName;
+    private String url;
+    private String referURL = "http://www.baidu.com"; // make a faked refer URL
+    private String folder;
+    private String filename;
+    private int threadNumber = 10;
 
-	public void setCommandName(String commandName) {
-		this.commandName = commandName;
-	}
+    public String getCommandName() {
+        return commandName;
+    }
 
-	public String getUrl() {
-		return url;
-	}
+    public void setCommandName(String commandName) {
+        this.commandName = commandName;
+    }
 
-	public void setUrl(String url) {
-		this.url = url;
-	}
+    public String getUrl() {
+        return url;
+    }
 
-	public String getReferURL() {
-		return referURL;
-	}
+    public void setUrl(String url) {
+        this.url = url;
+    }
 
-	public void setReferURL(String referURL) {
-		this.referURL = referURL;
-	}
+    public String getReferURL() {
+        return referURL;
+    }
 
-	public String getFolder() {
-		return folder;
-	}
+    public void setReferURL(String referURL) {
+        this.referURL = referURL;
+    }
 
-	public void setFolder(String folder) {
-		this.folder = folder;
-	}
+    public String getFolder() {
+        return folder;
+    }
 
-	public String getFilename() {
-		return filename;
-	}
+    public void setFolder(String folder) {
+        this.folder = folder;
+    }
 
-	public void setFilename(String filename) {
-		this.filename = filename;
-	}
+    public String getFilename() {
+        return filename;
+    }
 
-	public int getThreadNumber() {
-		return threadNumber;
-	}
+    public void setFilename(String filename) {
+        this.filename = filename;
+    }
 
-	public void setThreadNumber(int threadNumber) {
-		this.threadNumber = threadNumber;
-	}
+    public int getThreadNumber() {
+        return threadNumber;
+    }
 
-	@Override
-	public void validate() throws ErrorException {
-		boolean result = true;
-		// validate url
-		//
-		try {
-			new URL(url);
-		} catch (MalformedURLException e) {
-			result = false;
-			throw new ErrorException(ErrorMessage.URL_NOT_AVAILABLE);
-		}
+    public void setThreadNumber(int threadNumber) {
+        this.threadNumber = threadNumber;
+    }
 
-		// validate folder
-		//
-		File file = new File(folder);
-
-		if (!file.exists()) {
-			result = false;
-			throw new ErrorException(ErrorMessage.FOLDER_NOT_EXISTS);
-		}
-
-		// validate filename
-		// ignored for the moment
-		//
-	}
-
+    @Override
+    public void validate() throws ErrorException {
+        boolean result = true;
+        // validate url
+        //
+        try {
+            new URL(url);
+        } catch (MalformedURLException e) {
+            result = false;
+            throw new ErrorException(ErrorMessage.URL_NOT_AVAILABLE);
+        }
+        // validate folder
+        //
+        File file = new File(folder);
+        if ( !file.exists() ) {
+            result = false;
+            throw new ErrorException(ErrorMessage.FOLDER_NOT_EXISTS);
+        }
+        // validate filename
+        // ignored for the moment
+        //
+    }
 }

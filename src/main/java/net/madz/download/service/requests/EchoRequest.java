@@ -3,44 +3,44 @@ package net.madz.download.service.requests;
 import net.madz.download.service.IServiceRequest;
 
 public class EchoRequest implements IServiceRequest {
-	private String commandName;
-	private String message;
-	private boolean lowerCase;
 
-	public EchoRequest() {
-		super();
-	}
+    private String commandName;
+    private String message;
+    private boolean lowerCase;
 
-	public String getMessage() {
-		return message;
-	}
+    public EchoRequest() {
+        super();
+    }
 
-	public boolean isLowercase() {
-		return lowerCase;
-	}
+    public String getMessage() {
+        return message;
+    }
 
-	public void setLowerCase(boolean lowerCase) {
-		this.lowerCase = lowerCase;
-	}
+    public boolean isLowercase() {
+        return lowerCase;
+    }
 
-	public void setL(boolean l) {
-		this.lowerCase = l;
-	}
+    public void setLowerCase(boolean lowerCase) {
+        this.lowerCase = lowerCase;
+    }
 
-	public String getCommandName() {
-		return commandName;
-	}
+    public void setL(boolean l) {
+        this.lowerCase = l;
+    }
 
-	public void setCommandName(String commandName) {
-		this.commandName = commandName;
-	}
+    public String getCommandName() {
+        return commandName;
+    }
 
-	public void setMessage(String message) {
-		this.message = message;
-	}
+    public void setCommandName(String commandName) {
+        this.commandName = commandName;
+    }
 
-	@Override
-	public void validate() {
-	}
+    public void setMessage(String message) {
+        this.message = message;
+    }
 
+    @Override
+    public void validate() {
+    }
 }

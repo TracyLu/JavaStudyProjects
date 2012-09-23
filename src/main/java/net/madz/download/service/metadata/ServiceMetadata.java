@@ -3,50 +3,50 @@ package net.madz.download.service.metadata;
 import java.util.LinkedList;
 
 public class ServiceMetadata {
-	private String name;
-	private String shortName;
-	private String description;
-	private LinkedList<Argument> arguments;
-	private LinkedList<Option> options;
 
-	public String getName() {
-		return name;
-	}
+    private String name;
+    private String shortName;
+    private String description;
+    private LinkedList<Argument> arguments;
+    private LinkedList<Option> options;
 
-	public void setName(String name) {
-		this.name = name;
-	}
+    public String getName() {
+        return name;
+    }
 
-	public String getShortName() {
-		return shortName;
-	}
+    public void setName(String name) {
+        this.name = name;
+    }
 
-	public void setShortName(String shortName) {
-		this.shortName = shortName;
-	}
+    public String getShortName() {
+        return shortName;
+    }
 
-	public void setDescription(String description) {
-		this.description = description;
-	}
+    public void setShortName(String shortName) {
+        this.shortName = shortName;
+    }
 
-	public String getDescription() {
-		return description;
-	}
+    public void setDescription(String description) {
+        this.description = description;
+    }
 
-	public LinkedList<Argument> getArguments() {
-		return arguments;
-	}
+    public String getDescription() {
+        return description;
+    }
 
-	public void setArguments(LinkedList<Argument> arguments) {
-		this.arguments = arguments;
-	}
+    public LinkedList<Argument> getArguments() {
+        return arguments;
+    }
 
-	public LinkedList<Option> getOptions() {
-		return options;
-	}
+    public void setArguments(LinkedList<Argument> arguments) {
+        this.arguments = arguments;
+    }
 
-	public void setOptions(LinkedList<Option> options) {
-		this.options = options;
-	}
+    public LinkedList<Option> getOptions() {
+        return options;
+    }
 
+    public void setOptions(LinkedList<Option> options) {
+        this.options = options;
+    }
 }

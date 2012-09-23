@@ -4,7 +4,7 @@ import net.madz.download.service.IServiceResponse;
 
 public class ResponseSerializer {
 
-	public String marshall(IServiceResponse response) {
-		return response.toString();
-	}
+    public String marshall(IServiceResponse response) {
+        return response.toString();
+    }
 }
