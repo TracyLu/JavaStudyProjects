@@ -4,6 +4,7 @@ import java.io.File;
 
 import net.madz.download.connector.IServiceEndpoint;
 import net.madz.download.connector.impl.ServiceEndpoint;
+import net.madz.download.engine.IDownloadProcess.StateEnum;
 import net.madz.download.service.ServiceHub;
 
 public class Main {
@@ -12,6 +13,8 @@ public class Main {
         ServiceHub.getInstance();
         // Create meta folder when not exists
         //
+        
+        new File("./meta/new").mkdir();
         new File("./meta/downloading").mkdirs();
         new File("./meta/finished").mkdirs();
         new File("./meta/deleted").mkdirs();

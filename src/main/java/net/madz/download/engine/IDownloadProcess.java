@@ -74,9 +74,10 @@ public interface IDownloadProcess extends Serializable, IReactiveObject {
          * 
          * Postconditions:
          * 
-         * 1. Download Task Meta-data file is created.
+         * 1. Download Task Meta-data file is created and in New folder.
          * 
          * 2. URL, Folder, filename, thread number, state = "New" are stored in the Meta-data file.
+         * 
          */
         @Initial
         New,
@@ -88,7 +89,7 @@ public interface IDownloadProcess extends Serializable, IReactiveObject {
          * 
          * 2. Meta-information in the meta-data file are properly set.
          * 
-         * 2.1. URL format is legal.
+         * 2.1.URL format is legal.
          * 
          * 2.2.Folder and filename is legal, as defined in New.Postconditions.
          * 
@@ -104,55 +105,180 @@ public interface IDownloadProcess extends Serializable, IReactiveObject {
          * 
          * 1.2. resumable is set
          * 
-         * 1.3. segments number is set
+         * 1.3. segments number is set.
          * 
-         * 1.4. state is set to "Prepared".
+         * 1.4  all segments information are set. such as: sequence, start bytes, end bytes, state, current bytes.
+         * 
+         * 1.5. state is set to "Prepared".
          * 
          * 2. Download Task data file is created 
          *    or re-created with deleting the pre-existing file (application aborted before update status to Prepared).
+         *    
+         * 3.Download Task Meta-data file is moved to Prepared folder.
          */ 
         @Running(priority = 1)
         Prepared,
         /**
          * Preconditions:
-         * 
+         *   
+         *   1.Prepared.Postconditions
+         *   
+         *   2.Thread pool is ready.
+         *   
          * Postconditions:
+         *   
+         *   1.Resources required had been allocated.
+         *   
+         *     1.1 Download worker threads (stands for IO/CPU/MEM/NETWORK)
+         *   
+         *   2.Download Task state is set to "Started".
+         *   
+         *   3.Download Task Meta-data file is moved to Started folder.
+         *   
          */
         @Running(priority = 0)
         Started,
+        /**
+         * Preconditions:
+         *   
+         *   1.Before thread pool ready, the task's state is in abnormal state "Started".
+         *   
+         *   2.Not all segments have been done.(If all segments have been done, it means the data file is done, just need to turn state to be Finished.)
+         *   
+         * Postconditions:
+         *   
+         *   1.The task with "Started" state should turn to be "InactiveStarted" state.
+         *   
+         *   2.If resumable = false, reset segment current bytes = 0.  
+         *   
+         *   3.Download Task Meta-data file is moved to InactiveStarted folder.
+         *   
+         */  
         @Corrupted(recoverPriority = 0)
         InactiveStarted,
+        /**
+         * Preconditions:
+         *   
+         *   1.Before thread pool ready, the task's state is Prepared.
+         *   
+         * Postconditions:
+         *   
+         *   1.The tasks with "Queued" state turned to be "InactivePrepared" state.
+         *   
+         *   2.Download Task Meta-data file is moved to InactivePrepared folder.
+         */
         @Corrupted(recoverPriority = 1)
-        InactiveQueued,
+        InactivePrepared,
+        /**
+         * Preconditions:
+         * 
+         *   1.The task's state is Prepared or Started.
+         *    
+         * Postconditions:
+         *   
+         *   1.The task's state turned to be paused.
+         *   
+         *   2.If resumable = false, reset segment current bytes = 0;
+         *   
+         *   3.Resources required had been released.
+         *   
+         *     3.1 Download worker thread (stands for IO/CPU/MEM/NETWORK)
+         *   
+         *   4.Download Task Meta-data file is moved to Paused folder.
+         *   
+         */
         @Stopped
         Paused,
+        /**
+         * Preconditions:
+         *   
+         *   1.The task's state is Started.
+         *   
+         * Postconditions:
+         *   
+         *   1.All segments' state turned to be Finished.
+         *   
+         *   2.The task's state turned to be Finished.
+         *   
+         *   3.Resources required had been released.
+         *   
+         *     3.1 Download worker thread (stands for IO/CPU/MEM/NETWORK)
+         *   
+         *   4.Download Task Meta-data file is moved to Finished folder.
+         */
         @Stopped
         Finished,
+        /**
+         * Preconditions:
+         * 
+         *   1.The task's state is New, Prepared or Started.
+         *   
+         *   2.Below errors occurred:
+         *   
+         *     2.1 Connect timeout
+         *     
+         *     2.2 Remote server is not exists.
+         *     
+         *     2.3 Insufficient disk space
+         * 
+         * Postconditions:
+         * 
+         *   1.The task's state is Failed.
+         *   
+         *   2.Resources required had been released.
+         *   
+         *     2.1 Download worker thread (stands for IO/CPU/MEM/NETWORK)
+         *   
+         *   3.Download Task Meta-data file is moved to Failed folder.
+         */
         @Stopped
         Failed,
+        /**
+         * Preconditions:
+         *   
+         *   1.Tasks in below states: New, Prepared, Started, Paused, Finished, Removed.
+         *   
+         * Postconditions:
+         * 
+         *   1.The task meta-data file is deleted.
+         *   
+         *   2.The task data-file is deleted.
+         *   
+         *   3.Resources required had been released.
+         *   
+         *     3.1 Download worker thread (stands for IO/CPU/MEM/NETWORK)
+         *   
+         */
         @End
         Removed;
 
         static {
             New.transitionFunction.put(Prepare, Prepared);
             New.transitionFunction.put(Remove, Removed);
-            Prepared.transitionFunction.put(Inactivate, InactiveQueued);
+            
+            Prepared.transitionFunction.put(Inactivate, InactivePrepared);
             Prepared.transitionFunction.put(Start, Started);
             Prepared.transitionFunction.put(Pause, Paused);
             Prepared.transitionFunction.put(Remove, Removed);
-            InactiveQueued.transitionFunction.put(Activate, Prepared);
+            
+            InactivePrepared.transitionFunction.put(Activate, Prepared);
+            
             Started.transitionFunction.put(Receive, Started);
             Started.transitionFunction.put(Pause, Paused);
             Started.transitionFunction.put(Inactivate, InactiveStarted);
             Started.transitionFunction.put(Err, Failed);
             Started.transitionFunction.put(Finish, Finished);
             Started.transitionFunction.put(Remove, Removed);
+            
             InactiveStarted.transitionFunction.put(Activate, Prepared);
+            
             Paused.transitionFunction.put(Restart, New);
             Paused.transitionFunction.put(Resume, New);
             Paused.transitionFunction.put(Remove, Removed);
+            
             Finished.transitionFunction.put(Remove, Removed);
             Finished.transitionFunction.put(Restart, New);
+            
             Failed.transitionFunction.put(Restart, New);
             Failed.transitionFunction.put(Resume, New);
             Failed.transitionFunction.put(Remove, Removed);

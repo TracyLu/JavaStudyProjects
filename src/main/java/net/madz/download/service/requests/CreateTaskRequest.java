@@ -86,5 +86,11 @@ public final class CreateTaskRequest implements IServiceRequest {
         // validate filename
         // ignored for the moment
         //
+        
+        // validate thread number
+        //
+        if (this.threadNumber <= 0 || threadNumber > 20) {
+            throw new ErrorException(ErrorMessage.THREAD_NUMBER_ILLEGAL);
+        }
     }
 }

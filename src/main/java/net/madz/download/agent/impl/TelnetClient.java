@@ -114,7 +114,7 @@ public class TelnetClient implements ITelnetClient {
                             CreateTaskRequest createTaskRequest = (CreateTaskRequest) request;
                             String filename = createTaskRequest.getFilename();
                             File logfile = new File("./meta/downloading/" + filename + "_log");
-                            MetaManager.serialize(createTaskRequest, logfile);
+                            MetaManager.serializeForNewState(createTaskRequest, logfile);
                             writer.println("System received your request.");
                             writer.flush();
                         }

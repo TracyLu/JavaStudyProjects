@@ -10,4 +10,5 @@ public class ErrorMessage {
     public static final String INNER_ERROR = "Inner error occured, please contact Administrator.";
     public static final String LOG_FILE_WAS_NOT_FOUND = "Log file was not found, please check under folder meta/downloading. Log file name is: ";
     public static final String LOG_FILE_IS_NOT_COMPLETE = "Log file is not complete, please contact administrator. Log file name is: ";
+    public static final String THREAD_NUMBER_ILLEGAL = "Pleas input correct thread number, it should be less than 20, and greater than 0.";
 }

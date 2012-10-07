@@ -2,6 +2,7 @@ package net.madz.download.service.metadata;
 
 import java.io.File;
 import java.net.URL;
+import java.util.Collections;
 import java.util.List;
 
 public final class DownloadTask {
@@ -90,10 +91,10 @@ public final class DownloadTask {
     }
 
     public List<Segment> getSegments() {
-        return segments;
+        return Collections.unmodifiableList(segments);
     }
 
-    public void setSegments(List<Segment> segments) {
-        this.segments = segments;
+    public void addSegment(Segment segment) {
+        this.segments.add(segment);
     }
 }

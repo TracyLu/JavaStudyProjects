@@ -73,8 +73,9 @@ public class CreateTaskService implements IService<CreateTaskRequest> {
         file = new File(folder, filename);
         logFile = new File("./meta/downloading/" + file.getName() + "_log");
         task = MetaManager.createDownloadTask(request);
-        MetaManager.serialize(task, logFile);
+        MetaManager.serializeForPreparedState(task, logFile);
         MetaManager.deserializeHeadInformation(logFile);
+        
         download(url, task.getSegmentsNumber());
         CreateTaskResponse downloadResponse = new CreateTaskResponse();
         downloadResponse.setMessage("You task is downloading");

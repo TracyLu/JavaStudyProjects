@@ -1,8 +1,11 @@
 package net.madz.download.service.metadata;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.RandomAccessFile;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -10,6 +13,7 @@ import java.net.URLConnection;
 import java.util.HashMap;
 
 import net.madz.download.LogUtils;
+import net.madz.download.engine.IDownloadProcess.StateEnum;
 import net.madz.download.service.exception.ErrorException;
 import net.madz.download.service.exception.ErrorMessage;
 import net.madz.download.service.requests.CreateTaskRequest;
@@ -18,29 +22,18 @@ public class MetaManager {
 
     public static HashMap<URL, DownloadTask> allTasks = new HashMap<URL, DownloadTask>();
 
-    public static void serialize(DownloadTask task, File file) {
+    public static void serializeForPreparedState(DownloadTask task, File file) {
         RandomAccessFile randomAccessFile = null;
         try {
             randomAccessFile = new RandomAccessFile(file, "rw");
-            // randomAccessFile.seek(Consts.URL_POSITION);
-            // randomAccessFile.writeChars(task.getUrl().toString());
-            //
-            // randomAccessFile.seek(Consts.REFER_URL_LENGTH);
-            // randomAccessFile.writeChars(task.getReferURL().toString());
-            // randomAccessFile.seek(Consts.FOLDER_POSITION);
-            // randomAccessFile.writeChars(task.getFolder().getAbsolutePath());
-            // randomAccessFile.seek(Consts.FILE_NAME_POSITION);
-            // randomAccessFile.writeChars(task.getFileName());
             randomAccessFile.seek(Consts.TOTAL_LENGTH_POSITION);
             randomAccessFile.writeLong(task.getTotalLength());
             randomAccessFile.seek(Consts.SEGMENTS_NUMBER_POSITION);
             randomAccessFile.writeInt(task.getSegmentsNumber());
             randomAccessFile.seek(Consts.RESUMABLE_FLAG_POSITION);
             randomAccessFile.writeBoolean(task.isResumable());
-            // randomAccessFile.seek(Consts.THREAD_NUMBER_POSITION);
-            // randomAccessFile.writeByte(task.getThreadNumber());
             randomAccessFile.seek(Consts.STATE_POSTION);
-            randomAccessFile.writeByte(task.getState());
+            randomAccessFile.writeByte(StateEnum.Prepared.ordinal());
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } catch (IOException e) {
@@ -77,7 +70,7 @@ public class MetaManager {
             LogUtils.error(MetaManager.class, ignored);
         }
         task.setTotalLength(getTotalLength(url));
-        task.setState((byte) TaskState.STARTED);
+        task.setState((byte) StateEnum.Prepared.ordinal());
         if ( resumable ) {
             task.setSegmentsNumber((int) ( task.getTotalLength() / Consts.ONE_SEGEMENT ));
         } else {
@@ -205,7 +198,7 @@ public class MetaManager {
         System.out.println("Segements Information:" + segmentsInformation.toString());
     }
 
-    public static void serialize(CreateTaskRequest request, File file) {
+    public static void serializeForNewState(CreateTaskRequest request, File file) {
         RandomAccessFile randomAccessFile = null;
         try {
             randomAccessFile = new RandomAccessFile(file, "rw");
@@ -219,6 +212,8 @@ public class MetaManager {
             randomAccessFile.writeChars(request.getFilename());
             randomAccessFile.seek(Consts.THREAD_NUMBER_POSITION);
             randomAccessFile.writeByte(request.getThreadNumber());
+            randomAccessFile.seek(Consts.STATE_POSTION);
+            randomAccessFile.writeByte(StateEnum.New.ordinal());
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } catch (IOException e) {
@@ -237,5 +232,107 @@ public class MetaManager {
         File finishedFolder = new File("./meta/finished");
         new File("./meta/deleted").mkdirs();
         new File("./meta/paused").mkdirs();
+    }
+
+    public static void serializeSegmentsInformation(DownloadTask task, File metadataFile) {
+        RandomAccessFile raf = null;
+        try {
+            raf = new RandomAccessFile(metadataFile, "rw");
+            for ( Segment segment : task.getSegments() ) {
+                int seq = segment.getId();
+                long position = Consts.FIRST_SEGMENT_POSITION + seq * Consts.SEGMENT_LENGTH;
+                raf.seek(position);
+                raf.writeInt(seq);
+                position += Consts.SEGMENT_ID_LENGTH;
+                raf.writeLong(segment.getStartBytes());
+                position += Consts.SEGMENT_START_BYTES_LENGTH;
+                raf.writeLong(segment.getEndBytes());
+                position += Consts.SEGMENT_END_BYTES_LENGTH;
+                raf.writeByte(StateEnum.Prepared.ordinal());
+                position += Consts.SEGMENT_STATE_LENGTH;
+                raf.writeLong(segment.getStartBytes());
+            }
+        } catch (FileNotFoundException ignored) {
+            LogUtils.error(MetaManager.class, ignored);
+        } catch (IOException ignored) {
+            LogUtils.error(MetaManager.class, ignored);
+        }
+    }
+
+    public static void computeSegmentsInformation(DownloadTask task) {
+        int segmentsNumber = task.getSegmentsNumber();
+        long partLength = 0L;
+        long totalLength = task.getTotalLength();
+        partLength = totalLength / segmentsNumber;
+        for ( int i = 0; i < segmentsNumber; i++ ) {
+            Segment segment = new Segment();
+            segment.setId(i);
+            final int seq = i;
+            final long finalPartLength = partLength;
+            if ( i < segmentsNumber - 1 ) {
+                segment.setStartBytes(finalPartLength * seq);
+                segment.setEndBytes(finalPartLength * ( seq - 1 ) - 1);
+            } else {
+                final long finalTotalLength = totalLength;
+                segment.setStartBytes(finalPartLength * seq);
+                segment.setEndBytes(finalTotalLength - 1);
+            }
+            task.addSegment(segment);
+        }
+    }
+
+    private static void copy(File resFile, File objFolderFile) {
+        if ( !resFile.exists() ) return;
+        if ( !objFolderFile.exists() ) objFolderFile.mkdirs();
+        if ( resFile.isFile() ) {
+            File objFile = new File(objFolderFile.getPath() + File.separator + resFile.getName());
+            InputStream ins = null;
+            FileOutputStream outs = null;
+            try {
+                ins = new FileInputStream(resFile);
+                outs = new FileOutputStream(objFile);
+                byte[] buffer = new byte[1024 * 512];
+                int length;
+                while ( ( length = ins.read(buffer) ) != -1 ) {
+                    outs.write(buffer, 0, length);
+                }
+            } catch (FileNotFoundException ignored) {
+                LogUtils.error(MetaManager.class, ignored);
+            } catch (IOException ignored) {
+                LogUtils.error(MetaManager.class, ignored);
+            } finally {
+                try {
+                    ins.close();
+                    outs.flush();
+                    outs.close();
+                } catch (IOException ignored) {
+                    LogUtils.error(MetaManager.class, ignored);
+                }
+            }
+        } else {
+            String objFolder = objFolderFile.getPath() + File.separator + resFile.getName();
+            File _objFolderFile = new File(objFolder);
+            _objFolderFile.mkdirs();
+            for ( File sf : resFile.listFiles() ) {
+                copy(sf, new File(objFolder));
+            }
+        }
+    }
+
+    public static void move(File srcFile, File objFolderFile) {
+        copy(srcFile, objFolderFile);
+        delete(srcFile);
+    }
+
+    private static void delete(File file) {
+        if ( !file.exists() ) return;
+        if ( file.isFile() ) {
+            file.delete();
+        } else {
+            for ( File f : file.listFiles() ) {
+                delete(f);
+            }
+            file.delete();
+        }
     }
 }
