@@ -1,12 +1,23 @@
 package net.madz.download.engine;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.RandomAccessFile;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import net.madz.core.lifecycle.IState;
 import net.madz.download.service.metadata.DownloadTask;
 import net.madz.download.service.metadata.MetaManager;
+import net.madz.download.service.metadata.Segment;
 import net.madz.download.service.requests.CreateTaskRequest;
 
 public class DownloadProcess implements IDownloadProcess {
@@ -17,6 +28,7 @@ public class DownloadProcess implements IDownloadProcess {
     private transient ExecutorService threadPool = null;
     private File metadataFile;
     private File dataFile;
+    private DownloadTaskWorker worker;
 
     public DownloadProcess(CreateTaskRequest request) {
         super();
@@ -45,7 +57,8 @@ public class DownloadProcess implements IDownloadProcess {
 
     @Override
     public void start() {
-        // TODO Auto-generated method stub
+        worker = new DownloadTaskWorker(dataFile, metadataFile, task);
+        threadPool.execute(worker);
     }
 
     @Override
@@ -65,7 +78,7 @@ public class DownloadProcess implements IDownloadProcess {
 
     @Override
     public void pause() {
-        // TODO Auto-generated method stub
+        worker.pause();
     }
 
     @Override

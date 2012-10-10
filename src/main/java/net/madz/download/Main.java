@@ -4,7 +4,6 @@ import java.io.File;
 
 import net.madz.download.connector.IServiceEndpoint;
 import net.madz.download.connector.impl.ServiceEndpoint;
-import net.madz.download.engine.IDownloadProcess.StateEnum;
 import net.madz.download.service.ServiceHub;
 
 public class Main {

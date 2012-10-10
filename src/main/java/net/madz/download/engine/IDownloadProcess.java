@@ -133,7 +133,11 @@ public interface IDownloadProcess extends Serializable, IReactiveObject {
          *   
          *   2.Download Task state is set to "Started".
          *   
-         *   3.Download Task Meta-data file is moved to Started folder.
+         *   3.Download Task Meta-data file 
+         *   
+         *     3.1 It is moved to Started folder.
+         *     
+         *     3.2 state is updated to Started.
          *   
          */
         @Running(priority = 0)

@@ -335,4 +335,18 @@ public class MetaManager {
             file.delete();
         }
     }
+
+    public static void updateTaskState(File metadataFile, StateEnum state) throws FileNotFoundException, IOException {
+        RandomAccessFile raf = new RandomAccessFile(metadataFile, "rw");
+        raf.seek(Consts.STATE_POSTION);
+        raf.writeByte(state.ordinal());
+    }
+
+    public static void updateSegmentDownloadProgress(File metadataFile, int segmentId, long currentBytes) throws FileNotFoundException, IOException {
+        RandomAccessFile raf = new RandomAccessFile(metadataFile, "rw");
+        long segmentStartPosition = Consts.FIRST_SEGMENT_POSITION + Consts.SEGMENT_LENGTH * segmentId;
+        long currentBytesPosition = segmentStartPosition + Consts.SEGMENT_ID_LENGTH + Consts.SEGMENT_START_BYTES_LENGTH + Consts.SEGMENT_END_BYTES_LENGTH;
+        raf.seek(currentBytesPosition);
+        raf.writeLong(currentBytes);
+    }
 }
