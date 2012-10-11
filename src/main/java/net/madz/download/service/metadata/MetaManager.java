@@ -60,7 +60,7 @@ public class MetaManager {
         }
         task.setUrl(url);
         task.setReferURL(referURL);
-        task.setFolder(new File(request.getFilename()));
+        task.setFolder(new File(request.getFolder()));
         task.setFileName(request.getFilename());
         task.setThreadNumber(new Integer(request.getThreadNumber()).byteValue());
         try {
@@ -70,9 +70,10 @@ public class MetaManager {
             LogUtils.error(MetaManager.class, ignored);
         }
         task.setTotalLength(getTotalLength(url));
-        task.setState((byte) StateEnum.Prepared.ordinal());
+        task.setState((byte) StateEnum.New.ordinal());
         if ( resumable ) {
-            task.setSegmentsNumber((int) ( task.getTotalLength() / Consts.ONE_SEGEMENT ));
+            int segmentsNumber = (int) ( task.getTotalLength() / Consts.ONE_SEGEMENT );
+            task.setSegmentsNumber(segmentsNumber <= 0 ? 1 : segmentsNumber);
         } else {
             task.setSegmentsNumber(1);
         }
@@ -271,57 +272,56 @@ public class MetaManager {
             final long finalPartLength = partLength;
             if ( i < segmentsNumber - 1 ) {
                 segment.setStartBytes(finalPartLength * seq);
-                segment.setEndBytes(finalPartLength * ( seq - 1 ) - 1);
+                segment.setEndBytes(finalPartLength * ( seq + 1 ) - 1);
+                System.out.println("segment id:" + i);
+                System.out.println("segment start bytes:" + segment.getStartBytes());
+                System.out.println("segment end bytes:" + segment.getEndBytes());
             } else {
                 final long finalTotalLength = totalLength;
                 segment.setStartBytes(finalPartLength * seq);
                 segment.setEndBytes(finalTotalLength - 1);
+                System.out.println("segment id:" + i);
+                System.out.println("segment start bytes:" + segment.getStartBytes());
+                System.out.println("segment end bytes:" + segment.getEndBytes());
             }
             task.addSegment(segment);
         }
     }
 
-    private static void copy(File resFile, File objFolderFile) {
-        if ( !resFile.exists() ) return;
+    private static File copy(File resFile, File objFolderFile) {
+        if ( !resFile.exists() || !resFile.isFile() ) throw new IllegalStateException("resFile only accept file existed.");
         if ( !objFolderFile.exists() ) objFolderFile.mkdirs();
-        if ( resFile.isFile() ) {
-            File objFile = new File(objFolderFile.getPath() + File.separator + resFile.getName());
-            InputStream ins = null;
-            FileOutputStream outs = null;
+        File objFile = new File(objFolderFile.getPath() + File.separator + resFile.getName());
+        InputStream ins = null;
+        FileOutputStream outs = null;
+        try {
+            ins = new FileInputStream(resFile);
+            outs = new FileOutputStream(objFile);
+            byte[] buffer = new byte[1024 * 512];
+            int length;
+            while ( ( length = ins.read(buffer) ) != -1 ) {
+                outs.write(buffer, 0, length);
+            }
+        } catch (FileNotFoundException ignored) {
+            LogUtils.error(MetaManager.class, ignored);
+        } catch (IOException ignored) {
+            LogUtils.error(MetaManager.class, ignored);
+        } finally {
             try {
-                ins = new FileInputStream(resFile);
-                outs = new FileOutputStream(objFile);
-                byte[] buffer = new byte[1024 * 512];
-                int length;
-                while ( ( length = ins.read(buffer) ) != -1 ) {
-                    outs.write(buffer, 0, length);
-                }
-            } catch (FileNotFoundException ignored) {
-                LogUtils.error(MetaManager.class, ignored);
+                ins.close();
+                outs.flush();
+                outs.close();
             } catch (IOException ignored) {
                 LogUtils.error(MetaManager.class, ignored);
-            } finally {
-                try {
-                    ins.close();
-                    outs.flush();
-                    outs.close();
-                } catch (IOException ignored) {
-                    LogUtils.error(MetaManager.class, ignored);
-                }
-            }
-        } else {
-            String objFolder = objFolderFile.getPath() + File.separator + resFile.getName();
-            File _objFolderFile = new File(objFolder);
-            _objFolderFile.mkdirs();
-            for ( File sf : resFile.listFiles() ) {
-                copy(sf, new File(objFolder));
             }
         }
+        return objFile;
     }
 
-    public static void move(File srcFile, File objFolderFile) {
-        copy(srcFile, objFolderFile);
+    public static File move(File srcFile, File objFolderFile) {
+        File targetFile = copy(srcFile, objFolderFile);
         delete(srcFile);
+        return targetFile;
     }
 
     private static void delete(File file) {

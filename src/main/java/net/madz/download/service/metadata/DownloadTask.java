@@ -3,6 +3,7 @@ package net.madz.download.service.metadata;
 import java.io.File;
 import java.net.URL;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 
 public final class DownloadTask {
@@ -16,7 +17,7 @@ public final class DownloadTask {
     private boolean resumable;
     private byte threadNumber;
     private byte state;
-    private List<Segment> segments;
+    private List<Segment> segments = new LinkedList<Segment>();
 
     public URL getUrl() {
         return url;
