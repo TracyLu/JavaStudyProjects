@@ -27,7 +27,6 @@ public class DownloadProcess implements IDownloadProcess {
     private transient final ExecutorService receiveUpdateExecutor = Executors.newSingleThreadExecutor();
     private boolean pauseFlag = false;
     private List<DownloadSegmentWorker> workers = new LinkedList<DownloadSegmentWorker>();
-    private int doneNumber;
 
     public DownloadProcess(CreateTaskRequest request) {
         super();
@@ -84,25 +83,6 @@ public class DownloadProcess implements IDownloadProcess {
                 localThreadPool.execute(worker);
             }
         }
-        // if ( !pauseFlag ) {
-        // poolLock.lock();
-        // try {
-        // while ( doneNumber < segments.size() ) {
-        // try {
-        // allDoneCondition.await();
-        // if ( doneNumber == segments.size() ) {
-        // localThreadPool.shutdown();
-        // }
-        // } catch (InterruptedException e) {
-        // e.printStackTrace();
-        // }
-        // }
-        // } finally {
-        // poolLock.unlock();
-        // }
-        // } else {
-        // localThreadPool.shutdown();
-        // }
     }
 
     @Override
@@ -112,6 +92,11 @@ public class DownloadProcess implements IDownloadProcess {
             @Override
             public void run() {
                 DownloadProcess.this.receiveBytes += bytes;
+                synchronized (DownloadProcess.class) {
+                    if ( receiveBytes == task.getTotalLength() ) {
+                        DownloadProcess.class.notify();
+                    }
+                }
             }
         });
         System.out.println("receive bytes:" + this.receiveBytes);
@@ -162,7 +147,6 @@ public class DownloadProcess implements IDownloadProcess {
 
     @Override
     public void finish() {
-        task.setState((byte) StateEnum.Finished.ordinal());
         try {
             MetaManager.updateTaskState(metadataFile, StateEnum.Finished);
         } catch (FileNotFoundException ignored) {
@@ -199,11 +183,11 @@ public class DownloadProcess implements IDownloadProcess {
         // TODO Auto-generated method stub
     }
 
-    public synchronized int getDoneNumber() {
-        return this.doneNumber;
+    public synchronized long getReceiveBytes() {
+        return receiveBytes;
     }
 
-    public synchronized void increaseDoneNumber() {
-        this.doneNumber += 1;
+    public synchronized DownloadTask getTask() {
+        return task;
     }
 }
