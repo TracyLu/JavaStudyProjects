@@ -17,12 +17,10 @@ import net.madz.download.service.responses.HelpResponse;
         description = "command name, short name or full name are all ok.") }, options = {}, description = "Display all the commands and simple description.")
 public class HelpService implements IService<HelpRequest> {
 
-    private static ServiceHub serviceHub = ServiceHub.getInstance();
-
     public static HelpService getInstance(String commandName) {
         if ( !commandName.equalsIgnoreCase(HelpService.class.getAnnotation(Command.class).commandName()) ) {
         }
-        return (HelpService) serviceHub.getService(commandName);
+        return (HelpService) ServiceHub.getInstance().getService(commandName);
     }
 
     @Override

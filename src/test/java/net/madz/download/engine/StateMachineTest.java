@@ -9,9 +9,11 @@ import net.madz.core.lifecycle.impl.TransitionInvocationHandler;
 import net.madz.core.lifecycle.meta.StateMachineMetaData;
 import net.madz.core.lifecycle.meta.impl.StateMachineMetaDataBuilderImpl;
 import net.madz.core.verification.VerificationFailureSet;
+import net.madz.download.LogUtils;
 import net.madz.download.engine.IDownloadProcess.StateEnum;
 import net.madz.download.engine.IDownloadProcess.TransitionEnum;
 import net.madz.download.service.requests.CreateTaskRequest;
+import net.madz.download.service.services.CreateTaskService;
 
 import org.junit.Test;
 
@@ -24,7 +26,13 @@ public class StateMachineTest {
         final DownloadProcess process = createSampleProcess();
         testTransition(dumper, process, machineMetaData);
     }
-
+   @Test
+   public void pause_and_restart_task() {
+       final Dumper dumper = new Dumper(System.out);
+       final StateMachineMetaData<IDownloadProcess, StateEnum, TransitionEnum> machineMetaData = testBuildStateMachineMetaData(dumper);
+       final DownloadProcess process = createSampleProcess();
+       testTransition_with_pause_restart(dumper, process, machineMetaData);
+   }
     private StateMachineMetaData<IDownloadProcess, StateEnum, TransitionEnum> testBuildStateMachineMetaData(Dumper dumper) {
         dumper.println("");
         dumper.println("Dumping State Machine Meta Data");
@@ -59,6 +67,46 @@ public class StateMachineTest {
         @SuppressWarnings({ "rawtypes", "unchecked" })
         IDownloadProcess iProcess = (IDownloadProcess) Proxy.newProxyInstance(StateMachineTest.class.getClassLoader(), new Class[] { IDownloadProcess.class },
                 new TransitionInvocationHandler(process));
+        process.setProxy(iProcess);
+        dumper.print("From = ");
+        machineMetaData.getStateMetaData((StateEnum) iProcess.getState()).dump(dumper);
+        iProcess.prepare();
+        dumper.print("To   = ");
+        machineMetaData.getStateMetaData((StateEnum) iProcess.getState()).dump(dumper);
+        dumper.print("From = ");
+        machineMetaData.getStateMetaData((StateEnum) iProcess.getState()).dump(dumper);
+        iProcess.start();
+        dumper.print("To   = ");
+        machineMetaData.getStateMetaData((StateEnum) iProcess.getState()).dump(dumper);
+        dumper.print("From 1111= ");
+        machineMetaData.getStateMetaData((StateEnum) iProcess.getState()).dump(dumper);
+        synchronized (process) {
+            try {
+                if ( process.getReceiveBytes() != process.getTask().getTotalLength() ) {
+                    process.wait();
+                }
+                iProcess.finish();
+                
+            } catch (InterruptedException ignored) {
+                LogUtils.error(CreateTaskService.class, ignored);
+            }
+        }
+        dumper.print("To 2222  = ");
+        machineMetaData.getStateMetaData((StateEnum) iProcess.getState()).dump(dumper);
+        dumper.print("From  3333 = ");
+        machineMetaData.getStateMetaData((StateEnum) iProcess.getState()).dump(dumper);
+        iProcess.remove(true);
+        dumper.print("To  444 = ");
+        machineMetaData.getStateMetaData((StateEnum) iProcess.getState()).dump(dumper);
+    }
+    private void testTransition_with_pause_restart(Dumper dumper, DownloadProcess process, StateMachineMetaData<IDownloadProcess, StateEnum, TransitionEnum> machineMetaData) {
+        dumper.println("");
+        dumper.println("Test Transition");
+        dumper.println("");
+        @SuppressWarnings({ "rawtypes", "unchecked" })
+        IDownloadProcess iProcess = (IDownloadProcess) Proxy.newProxyInstance(StateMachineTest.class.getClassLoader(), new Class[] { IDownloadProcess.class },
+                new TransitionInvocationHandler(process));
+        process.setProxy(iProcess);
         dumper.print("From = ");
         machineMetaData.getStateMetaData((StateEnum) iProcess.getState()).dump(dumper);
         iProcess.prepare();
@@ -70,10 +118,14 @@ public class StateMachineTest {
         dumper.print("To   = ");
         machineMetaData.getStateMetaData((StateEnum) iProcess.getState()).dump(dumper);
         try {
-            Thread.sleep(100000);
+            Thread.sleep(2000);
         } catch (InterruptedException e) {
-            // TODO Auto-generated catch block
             e.printStackTrace();
         }
+        
+        iProcess.pause();
+        dumper.print("To   = ");
+        machineMetaData.getStateMetaData((StateEnum) iProcess.getState()).dump(dumper);
+        
     }
 }

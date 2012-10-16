@@ -79,7 +79,6 @@ public class TelnetClient implements ITelnetClient {
                         RequestDeserializer deserializer = null;
                         ResponseSerializer serializer = null;
                         IService service = null;
-                        IServiceRequest serviceRequest;
                         IServiceResponse serviceResponse = null;
                         final String plainTextResponse;
                         final String plainTextRequest = reader.readLine();
@@ -90,24 +89,10 @@ public class TelnetClient implements ITelnetClient {
                         try {
                             request = new RequestDeserializer().unmarshall(plainTextRequest);
                         } catch (IllegalStateException ex) {
-                            HelpRequest helpRequest = new HelpRequest();
-                            helpRequest.setCommandName("help");
-                            if ( ErrorMessage.COMMAND_NOT_FOUND.equalsIgnoreCase(ex.getMessage()) ) {
-                                helpRequest.setArgCommandName("");
-                                request = helpRequest;
-                            } else {
-                                String commandName = deserializer.parseCommand(plainTextRequest).getName();
-                                if ( "help".equalsIgnoreCase(commandName) ) {
-                                    helpRequest.setArgCommandName("");
-                                } else {
-                                    helpRequest.setArgCommandName(commandName);
-                                }
-                                request = helpRequest;
-                            }
+                            request = handleCommandIllegal(deserializer, plainTextRequest, ex);
                             service = ServiceHub.getService("help");
                         } catch (ErrorException ex) {
-                            writer.println(ex.getMessage());
-                            writer.flush();
+                            printAndFlush(ex.getMessage());
                             continue;
                         }
                         if ( request instanceof CreateTaskRequest ) {
@@ -115,8 +100,7 @@ public class TelnetClient implements ITelnetClient {
                             String filename = createTaskRequest.getFilename();
                             File logfile = new File("./meta/downloading/" + filename + "_log");
                             MetaManager.serializeForNewState(createTaskRequest, logfile);
-                            writer.println("System received your request.");
-                            writer.flush();
+                            printAndFlush("System received your request.");
                         }
                         if ( null == service ) {
                             service = ServiceHub.getService(request.getCommandName());
@@ -124,13 +108,11 @@ public class TelnetClient implements ITelnetClient {
                         try {
                             serviceResponse = service.processRequest(request);
                         } catch (ErrorException ex) {
-                            writer.println(ex.getMessage());
-                            writer.flush();
+                            printAndFlush(ex.getMessage());
                             continue;
                         }
                         plainTextResponse = serializer.marshall(serviceResponse);
-                        writer.println(plainTextResponse);
-                        writer.flush();
+                        printAndFlush(plainTextResponse);
                     }
                 } catch (IOException e) {
                     LogUtils.error(TelnetClient.class, e);
@@ -142,6 +124,30 @@ public class TelnetClient implements ITelnetClient {
                         TelnetClient.this.notify();
                     }
                 }
+            }
+
+            private void printAndFlush(String string) {
+                writer.println(string);
+                writer.flush();
+            }
+
+            private IServiceRequest handleCommandIllegal(RequestDeserializer deserializer, final String plainTextRequest, IllegalStateException ex) {
+                IServiceRequest request;
+                HelpRequest helpRequest = new HelpRequest();
+                helpRequest.setCommandName("help");
+                if ( ErrorMessage.COMMAND_NOT_FOUND.equalsIgnoreCase(ex.getMessage()) ) {
+                    helpRequest.setArgCommandName("");
+                    request = helpRequest;
+                } else {
+                    String commandName = deserializer.parseCommand(plainTextRequest).getName();
+                    if ( "help".equalsIgnoreCase(commandName) ) {
+                        helpRequest.setArgCommandName("");
+                    } else {
+                        helpRequest.setArgCommandName(commandName);
+                    }
+                    request = helpRequest;
+                }
+                return request;
             }
         });
     }

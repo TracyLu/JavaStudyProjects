@@ -8,8 +8,9 @@ import net.madz.download.service.annotations.Services;
 import net.madz.download.service.services.CreateTaskService;
 import net.madz.download.service.services.EchoService;
 import net.madz.download.service.services.HelpService;
+import net.madz.download.service.services.PauseService;
 
-@Services({ EchoService.class, HelpService.class, CreateTaskService.class })
+@Services({ EchoService.class, HelpService.class, CreateTaskService.class, PauseService.class })
 public class ServiceHub {
 
     private static ServiceHub serviceHub;

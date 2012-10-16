@@ -9,6 +9,7 @@ import java.net.URL;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 
+import net.madz.download.LogUtils;
 import net.madz.download.service.metadata.DownloadTask;
 import net.madz.download.service.metadata.MetaManager;
 import net.madz.download.service.metadata.Segment;
@@ -17,19 +18,15 @@ public final class DownloadSegmentWorker implements Runnable {
 
     private final DownloadTask task;
     private final Segment segment;
-    private final Lock poolLock;
-    private final Condition allDone;
-    private boolean pauseFlag;
-    private DownloadProcess process;
+    private volatile boolean pauseFlag;
+    private IDownloadProcess process;
     private File dataFile;
     private File metadataFile;
 
-    public DownloadSegmentWorker(DownloadProcess process, DownloadTask task, Segment segment, Lock poolLock, Condition allDone, File dataFile, File metadataFile) {
+    public DownloadSegmentWorker(IDownloadProcess process, DownloadTask task, Segment segment, File dataFile, File metadataFile) {
         this.process = process;
         this.task = task;
         this.segment = segment;
-        this.poolLock = poolLock;
-        this.allDone = allDone;
         this.dataFile = dataFile;
         this.metadataFile = metadataFile;
     }
@@ -49,39 +46,31 @@ public final class DownloadSegmentWorker implements Runnable {
             inputStream = openConnection.getInputStream();
             randomAccessDataFile = new RandomAccessFile(dataFile, "rw");
             long off = segment.getStartBytes();
-            System.out.println("£«£«£«£«£«£«£«£«Downloading segment" + segment.getId() + " off:" + off);
-            while ( ( !pauseFlag ) && ( size = inputStream.read(buf) ) != -1 ) {
+            while ( ( !isPauseFlag() ) && ( size = inputStream.read(buf) ) != -1 ) {
                 randomAccessDataFile.seek(off);
                 randomAccessDataFile.write(buf, 0, size);
-                process.receive(size);
+                synchronized (process) {
+                    if ( !isPauseFlag() ) {
+                        process.receive(size);
+                    }
+                }
                 off += size;
-                System.out.println("=====Downloading segment" + segment.getId() + " off:" + off);
                 MetaManager.updateSegmentDownloadProgress(metadataFile, segment.getId(), off);
             }
-//            if ( !pauseFlag ) {
-//                poolLock.lock();
-//                try {
-//                    process.increaseDoneNumber();
-//                    allDone.signalAll();
-//                } finally {
-//                    poolLock.unlock();
-//                }
-//            }
-        } catch (IOException e) {
+        } catch (IOException ignored) {
+            LogUtils.error(DownloadSegmentWorker.class, ignored);
         } finally {
-            // try {
-            // if ( null != inputStream ) {
-            // inputStream.close();
-            // }
-            // randomAccessDataFile.close();
-            // randomAccessMetadataFile.close();
-            // } catch (IOException e) {
-            // e.printStackTrace();
-            // }
+            openConnection.disconnect();
+            try {
+                inputStream.close();
+                randomAccessDataFile.close();
+            } catch (IOException ignored) {
+                LogUtils.error(DownloadSegmentWorker.class, ignored);
+            }
         }
     }
 
-    public boolean isPauseFlag() {
+    public synchronized boolean isPauseFlag() {
         return pauseFlag;
     }
 

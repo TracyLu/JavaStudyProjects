@@ -1,23 +1,20 @@
 package net.madz.download.service.services;
 
-import java.io.File;
 import java.lang.reflect.Proxy;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
+import net.madz.core.lifecycle.IStateChangeListener;
+import net.madz.core.lifecycle.StateContext;
+import net.madz.core.lifecycle.impl.StateChangeListenerHub;
 import net.madz.core.lifecycle.impl.TransitionInvocationHandler;
-import net.madz.download.LogUtils;
 import net.madz.download.engine.DownloadProcess;
 import net.madz.download.engine.IDownloadProcess;
+import net.madz.download.engine.IDownloadProcess.TransitionEnum;
 import net.madz.download.service.IService;
 import net.madz.download.service.IServiceResponse;
 import net.madz.download.service.annotations.Arg;
 import net.madz.download.service.annotations.Command;
 import net.madz.download.service.annotations.Option;
 import net.madz.download.service.exception.ErrorException;
-import net.madz.download.service.metadata.DownloadTask;
 import net.madz.download.service.requests.CreateTaskRequest;
 import net.madz.download.service.responses.CreateTaskResponse;
 
@@ -25,15 +22,10 @@ import net.madz.download.service.responses.CreateTaskResponse;
         @Arg(name = "filename", description = "new file name.") }, commandName = "create-task", options = { @Option(description = "thread number",
         fullName = "--threadNumber", shortName = "-n") }, request = CreateTaskRequest.class,
         description = "This command is responsible for downloding specified url resource.")
-public class CreateTaskService implements IService<CreateTaskRequest> {
+public class CreateTaskService implements IService<CreateTaskRequest>, IStateChangeListener {
 
-    private ExecutorService pool; // We use thread pool
-    private Lock poolLock = new ReentrantLock();
-    private Condition allDone = poolLock.newCondition();
-    private int doneNumber = 0;
-    private static File file; // Point to the storage file
-    private File logFile;
-    private DownloadTask task;
+    private DownloadProcess process;
+    private IDownloadProcess iProcess;
 
     @Override
     public void start() {
@@ -53,23 +45,36 @@ public class CreateTaskService implements IService<CreateTaskRequest> {
 
     @Override
     public IServiceResponse processRequest(CreateTaskRequest request) throws ErrorException {
-        final DownloadProcess process = new DownloadProcess(request);
-        IDownloadProcess iProcess = (IDownloadProcess) Proxy.newProxyInstance(process.getClass().getClassLoader(), process.getClass().getInterfaces(),
+        process = new DownloadProcess(request);
+        iProcess = (IDownloadProcess) Proxy.newProxyInstance(process.getClass().getClassLoader(), process.getClass().getInterfaces(),
                 new TransitionInvocationHandler(process));
+        process.setProxy(iProcess);
         iProcess.prepare();
+        StateChangeListenerHub.INSTANCE.registerListener(this);
         iProcess.start();
-        synchronized (DownloadProcess.class) {
-            try {
-                if (process.getReceiveBytes() != process.getTask().getTotalLength() ) {
-                    DownloadProcess.class.wait();
-                }
+        CreateTaskResponse downloadResponse = new CreateTaskResponse();
+        downloadResponse.setMessage("You task is started.");
+        return downloadResponse;
+    }
+
+    @Override
+    public void onStateChanged(StateContext<?, ?> context) {
+        final Object reactiveObject = context.getReactiveObject();
+        if ( !( reactiveObject instanceof IDownloadProcess ) ) {
+            return;
+        }
+        IDownloadProcess other = (IDownloadProcess) reactiveObject;
+        if ( !other.getUrl().equals(this.iProcess.getUrl()) ) {
+            return;
+        }
+        synchronized (process) {
+            if (context.getTransition() != TransitionEnum.Receive) {
+                return;
+            }
+            if ( process.getReceiveBytes() == process.getTask().getTotalLength() ) {
+                StateChangeListenerHub.INSTANCE.removeListener(this);                
                 iProcess.finish();
-            } catch (InterruptedException ignored) {
-                LogUtils.error(CreateTaskService.class, ignored);
             }
         }
-        CreateTaskResponse downloadResponse = new CreateTaskResponse();
-        downloadResponse.setMessage("You task is done.");
-        return downloadResponse;
     }
 }

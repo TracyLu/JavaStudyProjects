@@ -3,19 +3,25 @@ package net.madz.download.engine;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.net.URL;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import net.madz.core.lifecycle.IState;
 import net.madz.download.LogUtils;
+import net.madz.download.service.exception.ErrorException;
 import net.madz.download.service.metadata.DownloadTask;
 import net.madz.download.service.metadata.MetaManager;
 import net.madz.download.service.metadata.Segment;
 import net.madz.download.service.requests.CreateTaskRequest;
+import net.madz.download.service.requests.PauseTaskRequest;
 
 public class DownloadProcess implements IDownloadProcess {
 
@@ -27,6 +33,8 @@ public class DownloadProcess implements IDownloadProcess {
     private transient final ExecutorService receiveUpdateExecutor = Executors.newSingleThreadExecutor();
     private boolean pauseFlag = false;
     private List<DownloadSegmentWorker> workers = new LinkedList<DownloadSegmentWorker>();
+    private IDownloadProcess proxy;
+    private ExecutorService localThreadPool;
 
     public DownloadProcess(CreateTaskRequest request) {
         super();
@@ -73,12 +81,10 @@ public class DownloadProcess implements IDownloadProcess {
             LogUtils.debug(DownloadProcess.class, ignored.getMessage());
         }
         List<Segment> segments = task.getSegments();
-        final Lock poolLock = new ReentrantLock();
-        final Condition allDoneCondition = poolLock.newCondition();
-        ExecutorService localThreadPool = Executors.newFixedThreadPool(10);
+        localThreadPool = Executors.newFixedThreadPool(10);
         for ( final Segment segment : segments ) {
             if ( !pauseFlag ) {
-                DownloadSegmentWorker worker = new DownloadSegmentWorker(this, task, segment, poolLock, allDoneCondition, dataFile, metadataFile);
+                DownloadSegmentWorker worker = new DownloadSegmentWorker(proxy, task, segment, dataFile, metadataFile);
                 workers.add(worker);
                 localThreadPool.execute(worker);
             }
@@ -92,14 +98,13 @@ public class DownloadProcess implements IDownloadProcess {
             @Override
             public void run() {
                 DownloadProcess.this.receiveBytes += bytes;
-                synchronized (DownloadProcess.class) {
+                synchronized (DownloadProcess.this) {
                     if ( receiveBytes == task.getTotalLength() ) {
-                        DownloadProcess.class.notify();
+                        DownloadProcess.this.notify();
                     }
                 }
             }
         });
-        System.out.println("receive bytes:" + this.receiveBytes);
     }
 
     @Override
@@ -134,19 +139,20 @@ public class DownloadProcess implements IDownloadProcess {
     @Override
     public void pause() {
         this.pauseFlag = true;
-        task.setState((byte) StateEnum.Paused.ordinal());
         if ( workers.size() > 0 ) {
             for ( DownloadSegmentWorker worker : workers ) {
                 worker.setPauseFlag(true);
             }
         }
         resetProcessWhenNotResumable();
-        MetaManager.move(metadataFile, new File("./meta/paused"));
+        metadataFile = MetaManager.move(metadataFile, new File("./meta/paused"));
         this.receiveUpdateExecutor.shutdown();
+        this.localThreadPool.shutdown();
     }
 
     @Override
     public void finish() {
+        System.out.println("============Enter finish===========");
         try {
             MetaManager.updateTaskState(metadataFile, StateEnum.Finished);
         } catch (FileNotFoundException ignored) {
@@ -154,15 +160,17 @@ public class DownloadProcess implements IDownloadProcess {
         } catch (IOException ignored) {
             LogUtils.error(DownloadProcess.class, ignored);
         }
-        MetaManager.move(metadataFile, new File("./meta/finished"));
+        metadataFile = MetaManager.move(metadataFile, new File("./meta/finished"));
         this.receiveUpdateExecutor.shutdown();
+        this.localThreadPool.shutdown();
     }
 
     @Override
     public void err() {
         task.setState((byte) StateEnum.Failed.ordinal());
-        MetaManager.move(metadataFile, new File("./meta/failed"));
+        metadataFile = MetaManager.move(metadataFile, new File("./meta/failed"));
         this.receiveUpdateExecutor.shutdown();
+        this.localThreadPool.shutdown();
     }
 
     @Override
@@ -170,7 +178,6 @@ public class DownloadProcess implements IDownloadProcess {
         receiveUpdateExecutor.shutdown();
         dataFile.delete();
         metadataFile.delete();
-        this.receiveUpdateExecutor.shutdown();
     }
 
     @Override
@@ -180,7 +187,6 @@ public class DownloadProcess implements IDownloadProcess {
 
     @Override
     public void resume() {
-        // TODO Auto-generated method stub
     }
 
     public synchronized long getReceiveBytes() {
@@ -189,5 +195,18 @@ public class DownloadProcess implements IDownloadProcess {
 
     public synchronized DownloadTask getTask() {
         return task;
+    }
+
+    public void setProxy(IDownloadProcess proxy) {
+        this.proxy = proxy;
+    }
+
+    @Override
+    public String getUrl() {
+        return this.task.getUrl().toString();
+    }
+
+    public synchronized IDownloadProcess getProxy() {
+        return proxy;
     }
 }
