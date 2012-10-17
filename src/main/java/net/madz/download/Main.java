@@ -1,23 +1,22 @@
 package net.madz.download;
 
-import java.io.File;
-
 import net.madz.download.connector.IServiceEndpoint;
 import net.madz.download.connector.impl.ServiceEndpoint;
 import net.madz.download.service.ServiceHub;
+import net.madz.download.service.metadata.MetaManager;
 
 public class Main {
 
     public static void main(String[] args) {
-        ServiceHub.getInstance();
-        // Create meta folder when not exists
+        // Create metadata folders if not exists
         //
+        MetaManager.initiateMetadataDirs();
         
-        new File("./meta/new").mkdir();
-        new File("./meta/downloading").mkdirs();
-        new File("./meta/finished").mkdirs();
-        new File("./meta/deleted").mkdirs();
-        new File("./meta/paused").mkdirs();
+        MetaManager.load("./meta");
+        // Create and Start all services
+        //
+        ServiceHub.getInstance();
+        
         IServiceEndpoint endpoint = new ServiceEndpoint();
         endpoint.start();
     }

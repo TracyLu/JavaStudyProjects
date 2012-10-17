@@ -98,4 +98,22 @@ public final class DownloadTask {
     public void addSegment(Segment segment) {
         this.segments.add(segment);
     }
+
+    @Override
+    public String toString() {
+        StringBuilder segmentsInformation = new StringBuilder();
+        if ( null != segments ) {
+            segmentsInformation.append("(");
+            for ( Segment segment : segments ) {
+                segmentsInformation.append("id=" + segment.getId());
+                segmentsInformation.append(",start bytes=" + segment.getStartBytes());
+                segmentsInformation.append(",end bytes=" + segment.getEndBytes());
+                segmentsInformation.append(",current bytes=" + segment.getCurrentBytes());
+                segmentsInformation.append(",state=" + segment.getState());
+            }
+        }
+        return "DownloadTask [url=" + url + ", referURL=" + referURL + ", folder=" + folder + ", fileName=" + fileName + ", totalLength=" + totalLength
+                + ", segmentsNumber=" + segmentsNumber + ", resumable=" + resumable + ", threadNumber=" + threadNumber + ", state=" + state + ", segments="
+                + segments + "]";
+    }
 }

@@ -11,6 +11,8 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 
 import net.madz.download.LogUtils;
 import net.madz.download.engine.IDownloadProcess.StateEnum;
@@ -93,52 +95,96 @@ public class MetaManager {
         return totalLength;
     }
 
-    public static void deserializeHeadInformation(File file) {
+    public static DownloadTask deserializeHeadInformation(File file) {
+        DownloadTask task = new DownloadTask();
         RandomAccessFile randomAccessFile = null;
         StringBuilder headInfo = new StringBuilder();
         try {
             randomAccessFile = new RandomAccessFile(file, "rw");
-            byte[] result = new byte[Consts.URL_LENGTH];
-            randomAccessFile.readFully(result, 0, Consts.URL_LENGTH);
+            // URL
+            //
+            randomAccessFile.seek(Consts.URL_SIZE_POSITION);
+            final int urlLength = randomAccessFile.readInt();
+            byte[] result = new byte[urlLength];
+            randomAccessFile.seek(Consts.URL_POSITION);
+            randomAccessFile.readFully(result, 0, urlLength);
             headInfo.append(" URL:");
-            headInfo.append(new String(result));
-            result = new byte[Consts.REFER_URL_LENGTH];
-            randomAccessFile.seek(Consts.REFER_URL_POSITION);
-            randomAccessFile.readFully(result, 0, Consts.REFER_URL_LENGTH);
-            headInfo.append(" Refer URL:");
-            headInfo.append(new String(result));
+            String urlStr = new String(result, "utf8");
+            headInfo.append(urlStr);
+            URL url = new URL(urlStr);
+            task.setUrl(url);
+            // Refer URL
+            //
+            randomAccessFile.seek(Consts.REFER_URL_SIZE_POSITION);
+            final int referUrlLength = randomAccessFile.readInt();
+            if ( 0 < referUrlLength ) {
+                result = new byte[referUrlLength];
+                randomAccessFile.seek(Consts.REFER_URL_POSITION);
+                randomAccessFile.readFully(result, 0, referUrlLength);
+                headInfo.append(" Refer URL:");
+                String referUrl = new String(result, "utf8");
+                headInfo.append(referUrl);
+                task.setReferURL(new URL(referUrl));
+            }
+            // Folder
+            //
             result = new byte[Consts.FOLDER_LENGTH];
             randomAccessFile.seek(Consts.FOLDER_POSITION);
             randomAccessFile.readFully(result, 0, Consts.FOLDER_LENGTH);
             headInfo.append(" Folder:");
             headInfo.append(new String(result));
+            task.setFolder(new File(new String(result)));
+            // File name
+            //
             result = new byte[Consts.FILE_NAME_LENGTH];
             randomAccessFile.seek(Consts.FILE_NAME_POSITION);
             randomAccessFile.readFully(result, 0, Consts.FILE_NAME_LENGTH);
             headInfo.append(" File name:");
             headInfo.append(new String(result));
+            task.setFileName(new String(result));
+            // Total length
+            //
             randomAccessFile.seek(Consts.TOTAL_LENGTH_POSITION);
             headInfo.append(" Total Length:");
             headInfo.append(randomAccessFile.readLong());
+            task.setTotalLength(randomAccessFile.readLong());
+            // Segments number
+            //
             randomAccessFile.seek(Consts.SEGMENTS_NUMBER_POSITION);
             headInfo.append(" Segements Number:");
             headInfo.append(randomAccessFile.readInt());
+            task.setSegmentsNumber(randomAccessFile.readInt());
+            // Resumable
+            //
             randomAccessFile.seek(Consts.RESUMABLE_FLAG_POSITION);
             headInfo.append(" Resumable:");
             headInfo.append(randomAccessFile.readByte());
+            if ( randomAccessFile.readByte() == 0 ) {
+                task.setResumable(false);
+            } else {
+                task.setResumable(true);
+            }
+            // Thread number
+            //
             randomAccessFile.seek(Consts.THREAD_NUMBER_POSITION);
             headInfo.append(" Thread Number:");
             headInfo.append(randomAccessFile.readByte());
+            task.setThreadNumber(randomAccessFile.readByte());
+            // State
+            //
             randomAccessFile.seek(Consts.STATE_POSTION);
             headInfo.append(" State:");
             headInfo.append(randomAccessFile.readByte());
+            task.setState(randomAccessFile.readByte());
             System.out.println("Task header Information:");
             System.out.println(headInfo.toString());
         } catch (FileNotFoundException ignored) {
             LogUtils.error(MetaManager.class, ignored);
         } catch (IOException ignored2) {
+            System.out.println(ignored2.getMessage());
             LogUtils.error(MetaManager.class, ignored2);
         }
+        return task;
     }
 
     private static boolean checkResumable(URL url) throws IOException {
@@ -171,23 +217,40 @@ public class MetaManager {
             RandomAccessFile raf = new RandomAccessFile(logFile, "rw");
             long position = 0;
             for ( int i = 0; i < segments; i++ ) {
+                Segment item = new Segment();
+                // Segment Id
+                //
                 position = Consts.FIRST_SEGMENT_POSITION + i * Consts.SEGMENT_LENGTH;
                 raf.seek(position);
                 segmentsInformation.append("Segment Id:");
                 segmentsInformation.append(raf.readInt());
+                item.setId(raf.readInt());
+                // Segment Start bytes
+                //
                 position += Consts.SEGMENT_ID_LENGTH;
                 raf.seek(position);
                 segmentsInformation.append("Segment start bytes:");
                 segmentsInformation.append(raf.readLong());
+                item.setStartBytes(raf.readLong());
+                // Segment End bytes
+                //
                 position += Consts.SEGMENT_START_BYTES_LENGTH;
                 segmentsInformation.append("Segment end bytes:");
                 segmentsInformation.append(raf.readLong());
+                item.setEndBytes(raf.readLong());
+                // Segment state
+                //
                 position += Consts.SEGMENT_END_BYTES_LENGTH;
                 segmentsInformation.append("Segment state:");
                 segmentsInformation.append(raf.readByte());
+                item.setState(raf.readByte());
+                // Segment current bytes
+                //
                 position += Consts.SEGMENT_STATE_LENGTH;
                 segmentsInformation.append("Segment current bytes:");
                 segmentsInformation.append(raf.readLong());
+                item.setCurrentBytes(raf.readLong());
+                task.addSegment(item);
             }
         } catch (FileNotFoundException e) {
             LogUtils.error(MetaManager.class, e);
@@ -203,10 +266,16 @@ public class MetaManager {
         RandomAccessFile randomAccessFile = null;
         try {
             randomAccessFile = new RandomAccessFile(file, "rw");
+            byte[] urlBytes = request.getUrl().getBytes("utf8");
+            randomAccessFile.seek(Consts.URL_SIZE_POSITION);
+            randomAccessFile.writeInt(urlBytes.length);
             randomAccessFile.seek(Consts.URL_POSITION);
-            randomAccessFile.writeChars(request.getUrl());
+            randomAccessFile.write(urlBytes);
+            randomAccessFile.seek(Consts.REFER_URL_SIZE_POSITION);
+            byte[] referUrlBytes = request.getReferURL().getBytes("utf8");
+            randomAccessFile.write(referUrlBytes.length);
             randomAccessFile.seek(Consts.REFER_URL_LENGTH);
-            randomAccessFile.writeChars(request.getReferURL());
+            randomAccessFile.write(referUrlBytes);
             randomAccessFile.seek(Consts.FOLDER_POSITION);
             randomAccessFile.writeChars(request.getFolder());
             randomAccessFile.seek(Consts.FILE_NAME_POSITION);
@@ -348,5 +417,52 @@ public class MetaManager {
         long currentBytesPosition = segmentStartPosition + Consts.SEGMENT_ID_LENGTH + Consts.SEGMENT_START_BYTES_LENGTH + Consts.SEGMENT_END_BYTES_LENGTH;
         raf.seek(currentBytesPosition);
         raf.writeLong(currentBytes);
+    }
+
+    public static void initiateMetadataDirs() {
+        createFolder("./meta/new");
+        createFolder("./meta/prepared");
+        createFolder("./meta/started");
+        createFolder("./meta/failed");
+        createFolder("./meta/finished");
+        createFolder("./meta/paused");
+    }
+
+    private static void createFolder(String path) {
+        File folder = new File(path);
+        if ( !folder.exists() ) {
+            folder.mkdir();
+        }
+    }
+
+    public static List<DownloadTask> load(String root) {
+        List<DownloadTask> results = new LinkedList<DownloadTask>();
+        List<File> files = new LinkedList<File>();
+        files = parseFolder(files, new File(root));
+        for ( File file : files ) {
+            DownloadTask task = MetaManager.deserializeHeadInformation(file);
+            try {
+                MetaManager.deserializeSegmentsInformation(task, file);
+            } catch (ErrorException ignored) {
+                LogUtils.error(MetaManager.class, ignored);
+            }
+            task.toString();
+        }
+        return results;
+    }
+
+    private static List<File> parseFolder(List<File> result, File root) {
+        File[] listFiles = root.listFiles();
+        if ( null == listFiles ) {
+            return null;
+        }
+        for ( File file : listFiles ) {
+            if ( file.isFile() && file.getName().contains("_log") ) {
+                result.add(file);
+            } else {
+                parseFolder(result, file);
+            }
+        }
+        return result;
     }
 }
