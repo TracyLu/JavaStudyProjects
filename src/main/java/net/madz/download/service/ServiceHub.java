@@ -15,7 +15,7 @@ import net.madz.download.service.services.PauseService;
 public class ServiceHub {
 
     private static ServiceHub serviceHub;
-    private final static HashMap<String, IService> servicesRegistry = new HashMap<String, IService>();
+    private final HashMap<String, IService> servicesRegistry = new HashMap<String, IService>();
 
     private ServiceHub() {
         Services services = ServiceHub.class.getAnnotation(Services.class);
@@ -42,11 +42,11 @@ public class ServiceHub {
         return serviceHub;
     }
 
-    public static IService<?> getService(String commandName) {
+    public IService<?> getService(String commandName) {
         return servicesRegistry.get(commandName);
     }
 
-    public static HashMap<String, IService> getServicesregistry() {
+    public HashMap<String, IService> getServicesregistry() {
         return servicesRegistry;
     }
 }

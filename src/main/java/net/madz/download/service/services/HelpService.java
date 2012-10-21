@@ -47,7 +47,7 @@ public class HelpService implements IService<HelpRequest> {
             iterateAllCommands(response, description);
         } else {
             IService<?> service = null;
-            service = ServiceHub.getService(request.getArgCommandName());
+            service = ServiceHub.getInstance().getService(request.getArgCommandName());
             if ( null == service ) {
                 return new IServiceResponse() {
                     @Override
@@ -96,7 +96,7 @@ public class HelpService implements IService<HelpRequest> {
     }
 
     private void iterateAllCommands(HelpResponse response, StringBuilder description) {
-        HashMap<String, IService> servicesregistry = ServiceHub.getServicesregistry();
+        HashMap<String, IService> servicesregistry = ServiceHub.getInstance().getServicesregistry();
         Iterator<Entry<String, IService>> iterator = servicesregistry.entrySet().iterator();
         while ( iterator.hasNext() ) {
             Entry<String, IService> next = iterator.next();
