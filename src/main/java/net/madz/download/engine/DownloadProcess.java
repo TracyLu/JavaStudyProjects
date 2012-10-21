@@ -28,7 +28,7 @@ public class DownloadProcess implements IDownloadProcess {
     private static final long serialVersionUID = -2404735057674043661L;
     private final DownloadTask task;
     private volatile long receiveBytes;
-    private transient File metadataFile;
+    private File metadataFile;
     private transient File dataFile;
     private transient final ExecutorService receiveUpdateExecutor = Executors.newSingleThreadExecutor();
     private boolean pauseFlag = false;
