@@ -18,6 +18,7 @@ import net.madz.download.service.IService;
 
 import org.junit.Test;
 
+@SuppressWarnings("rawtypes")
 public class TelnetClientTest {
 
     @Test(expected = NullPointerException.class)
