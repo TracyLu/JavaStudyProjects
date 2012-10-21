@@ -32,7 +32,7 @@ public class DownloadProcess implements IDownloadProcess {
     private transient File dataFile;
     private transient final ExecutorService receiveUpdateExecutor = Executors.newSingleThreadExecutor();
     private boolean pauseFlag = false;
-    private List<DownloadSegmentWorker> workers = new LinkedList<DownloadSegmentWorker>();
+    private transient List<DownloadSegmentWorker> workers = new LinkedList<DownloadSegmentWorker>();
     private IDownloadProcess proxy;
     private ExecutorService localThreadPool;
 
