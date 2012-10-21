@@ -19,6 +19,7 @@ import net.madz.download.service.annotations.Command;
 import net.madz.download.service.annotations.Option;
 import net.madz.download.service.exception.ErrorException;
 import net.madz.download.service.metadata.DownloadTask;
+import net.madz.download.service.metadata.MetaManager;
 import net.madz.download.service.requests.ListTasksRequest;
 import net.madz.download.service.responses.ListTasksResponse;
 
@@ -52,6 +53,8 @@ public class ListTasksService implements IService<ListTasksRequest>, IStateChang
         tasks = new LinkedList<DownloadTask>();
         if ( request.isAll() ) {
             getAllTasks();
+            ListTasksResponse response = new ListTasksResponse(tasks);
+            return response;
         }
         if ( request.isFinished() ) {
             getFinishedTasks();
@@ -80,20 +83,25 @@ public class ListTasksService implements IService<ListTasksRequest>, IStateChang
                     tasks.add(process.getTask());
                 }
             }
-            System.out.println("end tasks size:" + tasks.size());
         }
     }
 
     private void getPausedTasks() {
-        // TODO Auto-generated method stub
+        List<DownloadTask> result = MetaManager.load("./meta/paused");
+        for ( DownloadTask task : result ) {
+            this.tasks.add(task);
+        }
     }
 
     private void getFinishedTasks() {
-        // TODO Auto-generated method stub
+        List<DownloadTask> result = MetaManager.load("./meta/finished");
+        for ( DownloadTask task : result ) {
+            this.tasks.add(task);
+        }
     }
 
     private void getAllTasks() {
-        // TODO Auto-generated method stub
+        this.tasks = MetaManager.load("./meta");
     }
 
     @Override

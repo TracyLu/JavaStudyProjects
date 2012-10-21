@@ -2,3 +2,5 @@
 *.class
 
 *.zip_log
+
+meta/paused/.DS_Store

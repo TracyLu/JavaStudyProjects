@@ -137,6 +137,13 @@ public class DownloadProcess implements IDownloadProcess {
         }
         resetProcessWhenNotResumable();
         metadataFile = MetaManager.move(metadataFile, new File("./meta/paused"));
+        try {
+            MetaManager.updateTaskState(metadataFile, StateEnum.Paused);
+        } catch (FileNotFoundException ignored) {
+            LogUtils.debug(DownloadProcess.class, ignored.getMessage());
+        } catch (IOException ignored) {
+            LogUtils.debug(DownloadProcess.class, ignored.getMessage());
+        }
         this.receiveUpdateExecutor.shutdown();
         this.localThreadPool.shutdown();
     }
@@ -160,6 +167,13 @@ public class DownloadProcess implements IDownloadProcess {
     public void err() {
         task.setState((byte) StateEnum.Failed.ordinal());
         metadataFile = MetaManager.move(metadataFile, new File("./meta/failed"));
+        try {
+            MetaManager.updateTaskState(metadataFile, StateEnum.Failed);
+        } catch (FileNotFoundException ignored) {
+            LogUtils.debug(DownloadProcess.class, ignored.getMessage());
+        } catch (IOException ignored) {
+            LogUtils.debug(DownloadProcess.class, ignored.getMessage());
+        }
         this.receiveUpdateExecutor.shutdown();
         this.localThreadPool.shutdown();
     }

@@ -129,38 +129,51 @@ public class MetaManager {
             }
             // Folder
             //
-            result = new byte[Consts.FOLDER_LENGTH];
-            randomAccessFile.seek(Consts.FOLDER_POSITION);
-            randomAccessFile.readFully(result, 0, Consts.FOLDER_LENGTH);
-            headInfo.append(" Folder:");
-            headInfo.append(new String(result));
-            task.setFolder(new File(new String(result)));
+            randomAccessFile.seek(Consts.FOLDER_SIZE_POSITION);
+            final int folderLength = randomAccessFile.readInt();
+            if ( 0 < folderLength ) {
+                result = new byte[folderLength];
+                randomAccessFile.seek(Consts.FOLDER_POSITION);
+                randomAccessFile.readFully(result, 0, folderLength);
+                headInfo.append(" Folder:");
+                String folder = new String(result, "utf8");
+                headInfo.append(new String(result));
+                task.setFolder(new File(folder));
+            }
             // File name
             //
-            result = new byte[Consts.FILE_NAME_LENGTH];
-            randomAccessFile.seek(Consts.FILE_NAME_POSITION);
-            randomAccessFile.readFully(result, 0, Consts.FILE_NAME_LENGTH);
-            headInfo.append(" File name:");
-            headInfo.append(new String(result));
-            task.setFileName(new String(result));
+            randomAccessFile.seek(Consts.FILE_NAME_SIZE_POSITION);
+            final int filenameLength = randomAccessFile.readInt();
+            if ( 0 < filenameLength ) {
+                result = new byte[filenameLength];
+                randomAccessFile.seek(Consts.FILE_NAME_POSITION);
+                randomAccessFile.readFully(result, 0, filenameLength);
+                headInfo.append(" File name:");
+                String filename = new String(result, "utf8");
+                headInfo.append(new String(result));
+                task.setFileName(filename);
+            }
             // Total length
             //
             randomAccessFile.seek(Consts.TOTAL_LENGTH_POSITION);
             headInfo.append(" Total Length:");
-            headInfo.append(randomAccessFile.readLong());
-            task.setTotalLength(randomAccessFile.readLong());
+            long totalLength = randomAccessFile.readLong();
+            headInfo.append(totalLength);
+            task.setTotalLength(totalLength);
             // Segments number
             //
             randomAccessFile.seek(Consts.SEGMENTS_NUMBER_POSITION);
             headInfo.append(" Segements Number:");
-            headInfo.append(randomAccessFile.readInt());
-            task.setSegmentsNumber(randomAccessFile.readInt());
+            int segmentNumber = randomAccessFile.readInt();
+            headInfo.append(segmentNumber);
+            task.setSegmentsNumber(segmentNumber);
             // Resumable
             //
             randomAccessFile.seek(Consts.RESUMABLE_FLAG_POSITION);
             headInfo.append(" Resumable:");
-            headInfo.append(randomAccessFile.readByte());
-            if ( randomAccessFile.readByte() == 0 ) {
+            byte resumableValue = randomAccessFile.readByte();
+            headInfo.append(resumableValue);
+            if ( resumableValue == 0 ) {
                 task.setResumable(false);
             } else {
                 task.setResumable(true);
@@ -169,14 +182,16 @@ public class MetaManager {
             //
             randomAccessFile.seek(Consts.THREAD_NUMBER_POSITION);
             headInfo.append(" Thread Number:");
-            headInfo.append(randomAccessFile.readByte());
-            task.setThreadNumber(randomAccessFile.readByte());
+            byte threadNumber = randomAccessFile.readByte();
+            headInfo.append(threadNumber);
+            task.setThreadNumber(threadNumber);
             // State
             //
             randomAccessFile.seek(Consts.STATE_POSTION);
             headInfo.append(" State:");
-            headInfo.append(randomAccessFile.readByte());
-            task.setState(randomAccessFile.readByte());
+            byte stateValue = randomAccessFile.readByte();
+            headInfo.append(stateValue);
+            task.setState(stateValue);
             System.out.println("Task header Information:");
             System.out.println(headInfo.toString());
         } catch (FileNotFoundException ignored) {
@@ -224,33 +239,38 @@ public class MetaManager {
                 position = Consts.FIRST_SEGMENT_POSITION + i * Consts.SEGMENT_LENGTH;
                 raf.seek(position);
                 segmentsInformation.append("Segment Id:");
-                segmentsInformation.append(raf.readInt());
-                item.setId(raf.readInt());
+                final int id = raf.readInt();
+                segmentsInformation.append(id);
+                item.setId(id);
                 // Segment Start bytes
                 //
                 position += Consts.SEGMENT_ID_LENGTH;
                 raf.seek(position);
                 segmentsInformation.append("Segment start bytes:");
-                segmentsInformation.append(raf.readLong());
-                item.setStartBytes(raf.readLong());
+                final long startBytes = raf.readLong();
+                segmentsInformation.append(startBytes);
+                item.setStartBytes(startBytes);
                 // Segment End bytes
                 //
                 position += Consts.SEGMENT_START_BYTES_LENGTH;
                 segmentsInformation.append("Segment end bytes:");
-                segmentsInformation.append(raf.readLong());
-                item.setEndBytes(raf.readLong());
+                final long endBytes = raf.readLong();
+                segmentsInformation.append(endBytes);
+                item.setEndBytes(endBytes);
                 // Segment state
                 //
                 position += Consts.SEGMENT_END_BYTES_LENGTH;
-                segmentsInformation.append("Segment state:");
-                segmentsInformation.append(raf.readByte());
-                item.setState(raf.readByte());
+                segmentsInformation.append("Segment current bytes:");
+                final long currentBytes = raf.readLong();
+                segmentsInformation.append(currentBytes);
+                item.setCurrentBytes(currentBytes);
                 // Segment current bytes
                 //
-                position += Consts.SEGMENT_STATE_LENGTH;
-                segmentsInformation.append("Segment current bytes:");
-                segmentsInformation.append(raf.readLong());
-                item.setCurrentBytes(raf.readLong());
+                position += Consts.SEGMENT_CURRENT_BYTES_LENGTH;
+                segmentsInformation.append("Segment state:");
+                final byte state = raf.readByte();
+                segmentsInformation.append(state);
+                item.setState(state);
                 task.addSegment(item);
             }
         } catch (FileNotFoundException e) {
@@ -267,22 +287,40 @@ public class MetaManager {
         RandomAccessFile randomAccessFile = null;
         try {
             randomAccessFile = new RandomAccessFile(file, "rw");
+            // URL
+            //
             byte[] urlBytes = request.getUrl().getBytes("utf8");
             randomAccessFile.seek(Consts.URL_SIZE_POSITION);
             randomAccessFile.writeInt(urlBytes.length);
             randomAccessFile.seek(Consts.URL_POSITION);
             randomAccessFile.write(urlBytes);
+            // REFER URL
+            //
             randomAccessFile.seek(Consts.REFER_URL_SIZE_POSITION);
             byte[] referUrlBytes = request.getReferURL().getBytes("utf8");
-            randomAccessFile.write(referUrlBytes.length);
-            randomAccessFile.seek(Consts.REFER_URL_LENGTH);
+            randomAccessFile.writeInt(referUrlBytes.length);
+            randomAccessFile.seek(Consts.REFER_URL_POSITION);
             randomAccessFile.write(referUrlBytes);
+            // FOLDER
+            //
+            randomAccessFile.seek(Consts.FOLDER_SIZE_POSITION);
+            byte[] folderBytes = request.getFolder().getBytes("utf8");
+            randomAccessFile.writeInt(folderBytes.length);
             randomAccessFile.seek(Consts.FOLDER_POSITION);
-            randomAccessFile.writeChars(request.getFolder());
+            randomAccessFile.write(folderBytes);
+            // File name
+            //
+            randomAccessFile.seek(Consts.FILE_NAME_SIZE_POSITION);
+            byte[] filenameBytes = request.getFilename().getBytes("utf8");
+            randomAccessFile.writeInt(filenameBytes.length);
             randomAccessFile.seek(Consts.FILE_NAME_POSITION);
-            randomAccessFile.writeChars(request.getFilename());
+            randomAccessFile.write(filenameBytes);
+            // Thread number
+            //
             randomAccessFile.seek(Consts.THREAD_NUMBER_POSITION);
             randomAccessFile.writeByte(request.getThreadNumber());
+            // State
+            //
             randomAccessFile.seek(Consts.STATE_POSTION);
             randomAccessFile.writeByte(StateEnum.New.ordinal());
         } catch (FileNotFoundException e) {
@@ -313,9 +351,9 @@ public class MetaManager {
                 position += Consts.SEGMENT_START_BYTES_LENGTH;
                 raf.writeLong(segment.getEndBytes());
                 position += Consts.SEGMENT_END_BYTES_LENGTH;
+                raf.writeLong(segment.getCurrentBytes());
+                position += Consts.SEGMENT_CURRENT_BYTES_LENGTH;
                 raf.writeByte(StateEnum.Prepared.ordinal());
-                position += Consts.SEGMENT_STATE_LENGTH;
-                raf.writeLong(segment.getStartBytes());
             }
         } catch (FileNotFoundException ignored) {
             LogUtils.error(MetaManager.class, ignored);
@@ -337,12 +375,14 @@ public class MetaManager {
             if ( i < segmentsNumber - 1 ) {
                 segment.setStartBytes(finalPartLength * seq);
                 segment.setEndBytes(finalPartLength * ( seq + 1 ) - 1);
+                segment.setCurrentBytes(finalPartLength * seq);
                 System.out.println("segment id:" + i);
                 System.out.println("segment start bytes:" + segment.getStartBytes());
                 System.out.println("segment end bytes:" + segment.getEndBytes());
             } else {
                 final long finalTotalLength = totalLength;
                 segment.setStartBytes(finalPartLength * seq);
+                segment.setCurrentBytes(finalPartLength * seq);
                 segment.setEndBytes(finalTotalLength - 1);
                 System.out.println("segment id:" + i);
                 System.out.println("segment start bytes:" + segment.getStartBytes());
@@ -446,6 +486,7 @@ public class MetaManager {
                 LogUtils.error(MetaManager.class, ignored);
             }
             task.toString();
+            results.add(task);
         }
         return results;
     }

@@ -11,12 +11,9 @@ public class Main {
         // Create metadata folders if not exists
         //
         MetaManager.initiateMetadataDirs();
-        
-        MetaManager.load("./meta");
         // Create and Start all services
         //
         ServiceHub.getInstance();
-        
         IServiceEndpoint endpoint = new ServiceEndpoint();
         endpoint.start();
     }

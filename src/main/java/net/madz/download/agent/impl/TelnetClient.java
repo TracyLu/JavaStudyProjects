@@ -96,12 +96,12 @@ public class TelnetClient<R extends IServiceRequest, S extends IService<R>> impl
                         IServiceResponse serviceResponse = null;
                         try {
                             serviceResponse = service.processRequest(request);
+                            final String plainTextResponse = serializer.marshall(serviceResponse);
+                            printAndFlush(plainTextResponse);
                         } catch (ErrorException ex) {
                             printAndFlush(ex.getMessage());
                             continue;
                         }
-                        final String plainTextResponse = serializer.marshall(serviceResponse);
-                        printAndFlush(plainTextResponse);
                     }
                 } catch (IOException e) {
                     LogUtils.error(TelnetClient.class, e);
