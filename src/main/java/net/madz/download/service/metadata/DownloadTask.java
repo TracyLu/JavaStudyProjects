@@ -1,13 +1,15 @@
 package net.madz.download.service.metadata;
 
 import java.io.File;
+import java.io.Serializable;
 import java.net.URL;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
-public final class DownloadTask {
+public final class DownloadTask implements Serializable {
 
+    private static final long serialVersionUID = 4357100059823468260L;
     private URL url;
     private URL referURL;
     private File folder;
