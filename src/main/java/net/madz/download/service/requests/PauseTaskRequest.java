@@ -1,10 +1,6 @@
 package net.madz.download.service.requests;
 
-import java.net.URL;
-
 import net.madz.download.service.IServiceRequest;
-import net.madz.download.service.annotations.Arg;
-import net.madz.download.service.annotations.Command;
 import net.madz.download.service.exception.ErrorException;
 
 public class PauseTaskRequest implements IServiceRequest {
