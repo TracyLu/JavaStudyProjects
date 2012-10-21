@@ -8,6 +8,7 @@ import net.madz.core.lifecycle.impl.StateChangeListenerHub;
 import net.madz.core.lifecycle.impl.TransitionInvocationHandler;
 import net.madz.download.engine.DownloadProcess;
 import net.madz.download.engine.IDownloadProcess;
+import net.madz.download.engine.IDownloadProcess.StateEnum;
 import net.madz.download.engine.IDownloadProcess.TransitionEnum;
 import net.madz.download.service.IService;
 import net.madz.download.service.IServiceResponse;
@@ -47,7 +48,7 @@ public class CreateTaskService implements IService<CreateTaskRequest>, IStateCha
     public IServiceResponse processRequest(CreateTaskRequest request) throws ErrorException {
         process = new DownloadProcess(request);
         iProcess = (IDownloadProcess) Proxy.newProxyInstance(process.getClass().getClassLoader(), process.getClass().getInterfaces(),
-                new TransitionInvocationHandler(process));
+                new TransitionInvocationHandler<IDownloadProcess, StateEnum, TransitionEnum>(process));
         process.setProxy(iProcess);
         iProcess.prepare();
         StateChangeListenerHub.INSTANCE.registerListener(this);
