@@ -18,8 +18,10 @@ import net.madz.download.service.responses.HelpResponse;
         description = "command name, short name or full name are all ok.") }, options = {}, description = "Display all the commands and simple description.")
 public class HelpService implements IService<HelpRequest> {
 
+    private final static HelpService service = new HelpService();
+
     public static HelpService getInstance(String commandName) {
-        return (HelpService) ServiceHub.getInstance().getService(commandName);
+        return service;
     }
 
     @Override
@@ -49,6 +51,7 @@ public class HelpService implements IService<HelpRequest> {
             service = ServiceHub.getInstance().getService(request.getArgCommandName());
             if ( null == service ) {
                 return new IServiceResponse() {
+
                     @Override
                     public String toString() {
                         return "Command " + request.getCommandName() + " does not exist.";
