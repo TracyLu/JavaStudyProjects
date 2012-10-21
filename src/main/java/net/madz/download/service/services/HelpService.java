@@ -40,7 +40,7 @@ public class HelpService implements IService<HelpRequest> {
     }
 
     @Override
-    public IServiceResponse processRequest(HelpRequest request) {
+    public IServiceResponse processRequest(final HelpRequest request) {
         HelpResponse response = new HelpResponse();
         StringBuilder description = new StringBuilder();
         if ( null == request.getArgCommandName() || 0 >= request.getArgCommandName().length() ) {
@@ -48,6 +48,14 @@ public class HelpService implements IService<HelpRequest> {
         } else {
             IService<?> service = null;
             service = ServiceHub.getService(request.getArgCommandName());
+            if ( null == service ) {
+                return new IServiceResponse() {
+                    @Override
+                    public String toString() {
+                        return "Command " + request.getCommandName() + " does not exist.";
+                    }
+                };
+            }
             Command command = service.getClass().getAnnotation(Command.class);
             description.append("NAME");
             description.append("\n");
