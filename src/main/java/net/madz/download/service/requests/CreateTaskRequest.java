@@ -67,20 +67,17 @@ public final class CreateTaskRequest implements IServiceRequest {
 
     @Override
     public void validate() throws ErrorException {
-        boolean result = true;
         // validate url
         //
         try {
             new URL(url);
         } catch (MalformedURLException e) {
-            result = false;
             throw new ErrorException(ErrorMessage.URL_NOT_AVAILABLE);
         }
         // validate folder
         //
         File file = new File(folder);
         if ( !file.exists() ) {
-            result = false;
             throw new ErrorException(ErrorMessage.FOLDER_NOT_EXISTS);
         }
         // validate filename

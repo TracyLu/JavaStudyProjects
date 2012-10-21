@@ -299,13 +299,6 @@ public class MetaManager {
         }
     }
 
-    public static void recover() {
-        File downloadingFolder = new File("./meta/downloading");
-        File finishedFolder = new File("./meta/finished");
-        new File("./meta/deleted").mkdirs();
-        new File("./meta/paused").mkdirs();
-    }
-
     public static void serializeSegmentsInformation(DownloadTask task, File metadataFile) {
         RandomAccessFile raf = null;
         try {
