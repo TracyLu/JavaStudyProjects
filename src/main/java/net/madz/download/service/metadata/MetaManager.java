@@ -285,14 +285,15 @@ public class MetaManager {
             randomAccessFile.seek(Consts.STATE_POSTION);
             randomAccessFile.writeByte(StateEnum.New.ordinal());
         } catch (FileNotFoundException e) {
-            e.printStackTrace();
+            throw new IllegalStateException(e);
         } catch (IOException e) {
-            e.printStackTrace();
+            throw new IllegalStateException(e);
         } finally {
             try {
-                randomAccessFile.close();
-            } catch (IOException e) {
-                e.printStackTrace();
+                if ( null != randomAccessFile ) {
+                    randomAccessFile.close();
+                }
+            } catch (IOException ignored) {
             }
         }
     }
