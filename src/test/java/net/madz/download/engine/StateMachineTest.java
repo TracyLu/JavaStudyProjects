@@ -82,7 +82,7 @@ public class StateMachineTest {
         machineMetaData.getStateMetaData((StateEnum) iProcess.getState()).dump(dumper);
         synchronized (process) {
             try {
-                if ( process.getReceiveBytes() != process.getTask().getTotalLength() ) {
+                while ( process.getReceiveBytes() != process.getTask().getTotalLength() ) {
                     process.wait();
                 }
                 iProcess.finish();
