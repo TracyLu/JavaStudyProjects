@@ -11,7 +11,7 @@ import net.madz.download.service.responses.EchoResponse;
 
 @Command(commandName = "echo", request = EchoRequest.class, arguments = { @Arg(name = "message") }, options = { @Option(shortName = "-l",
         fullName = "--lowerCase", description = "Echo message in lower case.") }, description = "Echo service will echo message.")
-public class EchoService implements IService {
+public class EchoService implements IService<IServiceRequest> {
 
     @Override
     public void start() {
