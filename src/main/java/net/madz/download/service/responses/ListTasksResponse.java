@@ -13,6 +13,7 @@ public class ListTasksResponse implements IServiceResponse {
     public ListTasksResponse(List<DownloadTask> tasks) {
         if ( null == tasks ) {
             count = 0;
+            return;
         }
         for ( DownloadTask task : tasks ) {
             count++;
