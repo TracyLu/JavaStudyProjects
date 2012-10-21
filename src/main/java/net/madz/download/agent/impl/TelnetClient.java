@@ -1,7 +1,6 @@
 package net.madz.download.agent.impl;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
@@ -19,11 +18,9 @@ import net.madz.download.service.IServiceResponse;
 import net.madz.download.service.ServiceHub;
 import net.madz.download.service.exception.ErrorException;
 import net.madz.download.service.exception.ErrorMessage;
-import net.madz.download.service.metadata.MetaManager;
-import net.madz.download.service.requests.CreateTaskRequest;
 import net.madz.download.service.requests.HelpRequest;
 
-public class TelnetClient implements ITelnetClient {
+public class TelnetClient<R extends IServiceRequest, S extends IService<R>> implements ITelnetClient {
 
     private final Socket socket;
     private final BufferedReader reader;
@@ -68,6 +65,7 @@ public class TelnetClient implements ITelnetClient {
     private Thread allocatListeningThread() {
         return new Thread(new Runnable() {
 
+            @SuppressWarnings("unchecked")
             @Override
             public void run() {
                 synchronized (TelnetClient.this) {
@@ -76,42 +74,33 @@ public class TelnetClient implements ITelnetClient {
                 }
                 try {
                     while ( !Thread.currentThread().isInterrupted() ) {
-                        RequestDeserializer deserializer = null;
-                        ResponseSerializer serializer = null;
-                        IService service = null;
-                        IServiceResponse serviceResponse = null;
-                        final String plainTextResponse;
                         final String plainTextRequest = reader.readLine();
+                        final RequestDeserializer deserializer = new RequestDeserializer();
+                        final ResponseSerializer serializer = new ResponseSerializer();
                         LogUtils.debug(TelnetClient.class, "Received request: " + plainTextRequest);
-                        deserializer = new RequestDeserializer();
-                        serializer = new ResponseSerializer();
-                        IServiceRequest request = null;
+                        
+                        R request = null;
+                        S service = null;
                         try {
-                            request = new RequestDeserializer().unmarshall(plainTextRequest);
+                            printAndFlush("System received your request.");
+                            request = (R) new RequestDeserializer().unmarshall(plainTextRequest);
+                            service = (S) ServiceHub.getInstance().getService(request.getCommandName());
                         } catch (IllegalStateException ex) {
-                            request = handleCommandIllegal(deserializer, plainTextRequest, ex);
-                            service = ServiceHub.getService("help");
+                            request = (R) handleCommandIllegal(deserializer, plainTextRequest, ex);
+                            service = (S) ServiceHub.getInstance().getService("help");
                         } catch (ErrorException ex) {
                             printAndFlush(ex.getMessage());
                             continue;
                         }
-                        if ( request instanceof CreateTaskRequest ) {
-                            CreateTaskRequest createTaskRequest = (CreateTaskRequest) request;
-                            String filename = createTaskRequest.getFilename();
-                            File logfile = new File("./meta/downloading/" + filename + "_log");
-                            MetaManager.serializeForNewState(createTaskRequest, logfile);
-                            printAndFlush("System received your request.");
-                        }
-                        if ( null == service ) {
-                            service = ServiceHub.getService(request.getCommandName());
-                        }
+
+                        IServiceResponse serviceResponse = null;
                         try {
                             serviceResponse = service.processRequest(request);
                         } catch (ErrorException ex) {
                             printAndFlush(ex.getMessage());
                             continue;
                         }
-                        plainTextResponse = serializer.marshall(serviceResponse);
+                        final String plainTextResponse = serializer.marshall(serviceResponse);
                         printAndFlush(plainTextResponse);
                     }
                 } catch (IOException e) {
@@ -139,7 +128,7 @@ public class TelnetClient implements ITelnetClient {
                     helpRequest.setArgCommandName("");
                     request = helpRequest;
                 } else {
-                    String commandName = deserializer.parseCommand(plainTextRequest).getName();
+                    String commandName = RequestDeserializer.parseCommand(plainTextRequest).getName();
                     if ( "help".equalsIgnoreCase(commandName) ) {
                         helpRequest.setArgCommandName("");
                     } else {

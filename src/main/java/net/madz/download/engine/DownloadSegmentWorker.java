@@ -6,8 +6,6 @@ import java.io.InputStream;
 import java.io.RandomAccessFile;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.Lock;
 
 import net.madz.download.LogUtils;
 import net.madz.download.service.metadata.DownloadTask;

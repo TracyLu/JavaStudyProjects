@@ -3,25 +3,16 @@ package net.madz.download.engine;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.net.URL;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
-import net.madz.core.lifecycle.IState;
 import net.madz.download.LogUtils;
-import net.madz.download.service.exception.ErrorException;
 import net.madz.download.service.metadata.DownloadTask;
 import net.madz.download.service.metadata.MetaManager;
 import net.madz.download.service.metadata.Segment;
 import net.madz.download.service.requests.CreateTaskRequest;
-import net.madz.download.service.requests.PauseTaskRequest;
 
 public class DownloadProcess implements IDownloadProcess {
 

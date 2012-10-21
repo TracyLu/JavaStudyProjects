@@ -15,15 +15,15 @@ import net.madz.download.service.services.PauseService;
 public class ServiceHub {
 
     private static ServiceHub serviceHub;
-    private final HashMap<String, IService> servicesRegistry = new HashMap<String, IService>();
+    private final HashMap<String, IService<? extends IServiceRequest>> servicesRegistry = new HashMap<String, IService<? extends IServiceRequest>>();
 
     private ServiceHub() {
         Services services = ServiceHub.class.getAnnotation(Services.class);
-        Class<? extends IService>[] serviceClass = services.value();
-        for ( Class<? extends IService> item : serviceClass ) {
+        Class<? extends IService<? extends IServiceRequest>>[] serviceClass = services.value();
+        for ( Class<? extends IService<? extends IServiceRequest>> item : serviceClass ) {
             Command command = item.getAnnotation(Command.class);
             try {
-                IService serviceObj = item.newInstance();
+                IService<? extends IServiceRequest> serviceObj = item.newInstance();
                 serviceObj.start();
                 servicesRegistry.put(command.commandName(), serviceObj);
             } catch (InstantiationException ignored) {
@@ -46,7 +46,7 @@ public class ServiceHub {
         return servicesRegistry.get(commandName);
     }
 
-    public HashMap<String, IService> getServicesregistry() {
+    public HashMap<String, IService<? extends IServiceRequest>> getServicesregistry() {
         return servicesRegistry;
     }
 }

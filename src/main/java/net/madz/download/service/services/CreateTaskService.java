@@ -1,5 +1,6 @@
 package net.madz.download.service.services;
 
+import java.io.File;
 import java.lang.reflect.Proxy;
 
 import net.madz.core.lifecycle.IStateChangeListener;
@@ -16,6 +17,7 @@ import net.madz.download.service.annotations.Arg;
 import net.madz.download.service.annotations.Command;
 import net.madz.download.service.annotations.Option;
 import net.madz.download.service.exception.ErrorException;
+import net.madz.download.service.metadata.MetaManager;
 import net.madz.download.service.requests.CreateTaskRequest;
 import net.madz.download.service.responses.CreateTaskResponse;
 
@@ -46,6 +48,7 @@ public class CreateTaskService implements IService<CreateTaskRequest>, IStateCha
 
     @Override
     public IServiceResponse processRequest(CreateTaskRequest request) throws ErrorException {
+
         process = new DownloadProcess(request);
         iProcess = (IDownloadProcess) Proxy.newProxyInstance(process.getClass().getClassLoader(), process.getClass().getInterfaces(),
                 new TransitionInvocationHandler<IDownloadProcess, StateEnum, TransitionEnum>(process));

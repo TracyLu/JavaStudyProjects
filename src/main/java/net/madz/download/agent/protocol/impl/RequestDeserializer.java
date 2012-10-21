@@ -26,7 +26,7 @@ public class RequestDeserializer {
         // Step 1: Analyze the command string and generate RawCommand
         //
         RawCommand rawCommand = RequestDeserializer.parseCommand(plainText);
-        IService<?> service = ServiceHub.getService(rawCommand.getName());
+        IService<?> service = ServiceHub.getInstance().getService(rawCommand.getName());
         if ( null == service ) {
             throw new IllegalStateException(ErrorMessage.COMMAND_NOT_FOUND);
         }
@@ -60,7 +60,6 @@ public class RequestDeserializer {
             return helpRequest;
         }
         Arg[] arguments = command.arguments();
-        Option[] options = command.options();
         try {
             requestClass.getMethod("setCommandName", String.class).invoke(serviceRequest, rawCommand.getName());
         } catch (Exception ex) {
@@ -125,7 +124,7 @@ public class RequestDeserializer {
             command.setName("help");
             return command;
         }
-        IService<?> service = ServiceHub.getService(results[0]);
+        IService<?> service = ServiceHub.getInstance().getService(results[0]);
         if ( null == service ) {
             command.setName("help");
             return command;

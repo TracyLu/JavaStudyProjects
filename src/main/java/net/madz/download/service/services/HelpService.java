@@ -5,6 +5,7 @@ import java.util.Iterator;
 import java.util.Map.Entry;
 
 import net.madz.download.service.IService;
+import net.madz.download.service.IServiceRequest;
 import net.madz.download.service.IServiceResponse;
 import net.madz.download.service.ServiceHub;
 import net.madz.download.service.annotations.Arg;
@@ -18,8 +19,6 @@ import net.madz.download.service.responses.HelpResponse;
 public class HelpService implements IService<HelpRequest> {
 
     public static HelpService getInstance(String commandName) {
-        if ( !commandName.equalsIgnoreCase(HelpService.class.getAnnotation(Command.class).commandName()) ) {
-        }
         return (HelpService) ServiceHub.getInstance().getService(commandName);
     }
 
@@ -96,12 +95,11 @@ public class HelpService implements IService<HelpRequest> {
     }
 
     private void iterateAllCommands(HelpResponse response, StringBuilder description) {
-        HashMap<String, IService> servicesregistry = ServiceHub.getInstance().getServicesregistry();
-        Iterator<Entry<String, IService>> iterator = servicesregistry.entrySet().iterator();
+        HashMap<String, IService<? extends IServiceRequest>> servicesregistry = ServiceHub.getInstance().getServicesregistry();
+        Iterator<Entry<String, IService<? extends IServiceRequest>>> iterator = servicesregistry.entrySet().iterator();
         while ( iterator.hasNext() ) {
-            Entry<String, IService> next = iterator.next();
-            String key = next.getKey();
-            IService value = next.getValue();
+            Entry<String, IService<? extends IServiceRequest>> next = iterator.next();
+            IService<? extends IServiceRequest> value = next.getValue();
             Command command = value.getClass().getAnnotation(Command.class);
             description.append(command.commandName());
             description.append("\t");
