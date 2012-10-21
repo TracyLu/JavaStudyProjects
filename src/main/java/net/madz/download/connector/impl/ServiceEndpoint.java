@@ -9,17 +9,14 @@ import net.madz.download.MessageConsts;
 import net.madz.download.agent.ITelnetClient;
 import net.madz.download.agent.impl.TelnetClient;
 import net.madz.download.connector.IServiceEndpoint;
-import net.madz.download.service.services.HelpService;
 
 public class ServiceEndpoint implements IServiceEndpoint {
 
-    private final HelpService service;
     private boolean started = false;
     private Thread workingThread = null;
 
     public ServiceEndpoint() {
         super();
-        this.service = new HelpService();
     }
 
     @Override
@@ -84,14 +81,12 @@ public class ServiceEndpoint implements IServiceEndpoint {
         }
     }
 
+    @SuppressWarnings("rawtypes")
     @Override
     public ITelnetClient createClient(Socket socket) {
         ITelnetClient client = null;
         try {
             client = new TelnetClient(socket);
-            // client.setDeserializer(new HelpDeserializer());
-            // client.setSerializer(new HelpSerializer());
-            // client.setService(service);
         } catch (IOException ignored) {
             LogUtils.error(ServiceEndpoint.class, ignored);
         }
