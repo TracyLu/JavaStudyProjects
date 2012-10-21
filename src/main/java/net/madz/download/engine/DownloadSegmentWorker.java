@@ -60,9 +60,11 @@ public final class DownloadSegmentWorker implements Runnable {
         } catch (IOException ignored) {
             LogUtils.error(DownloadSegmentWorker.class, ignored);
         } finally {
-            openConnection.disconnect();
+            if ( null != openConnection ) {
+                openConnection.disconnect();
+            }
             try {
-                if ( null != inputStream) {
+                if ( null != inputStream ) {
                     inputStream.close();
                 }
                 if ( null != randomAccessDataFile ) {

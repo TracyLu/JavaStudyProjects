@@ -1,7 +1,11 @@
 package net.madz.download.service.metadata;
 
-public class Segment {
+import java.io.Serializable;
+
+public class Segment implements Serializable {
     
+    private static final long serialVersionUID = -5065005410835889264L;
+
     private int id;
 
     private long startBytes;

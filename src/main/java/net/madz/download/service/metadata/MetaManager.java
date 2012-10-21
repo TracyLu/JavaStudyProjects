@@ -377,9 +377,13 @@ public class MetaManager {
             LogUtils.error(MetaManager.class, ignored);
         } finally {
             try {
-                ins.close();
-                outs.flush();
-                outs.close();
+                if ( null != ins ) {
+                    ins.close();
+                }
+                if ( null != outs ) {
+                    outs.flush();
+                    outs.close();
+                }
             } catch (IOException ignored) {
                 LogUtils.error(MetaManager.class, ignored);
             }
