@@ -66,6 +66,12 @@ public class Segment implements Serializable {
     public void setState(Byte state) {
         this.state = state;
     }
-    
+
+
+
+    @Override
+    public String toString() {
+        return "Segment [id=" + id + ", startBytes=" + startBytes + ", endBytes=" + endBytes + ", currentBytes=" + currentBytes + ", state=" + state + "]";
+    }
     
 }

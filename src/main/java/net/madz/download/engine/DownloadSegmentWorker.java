@@ -53,7 +53,7 @@ public final class DownloadSegmentWorker implements Runnable {
                     }
                 }
                 off += size;
-                MetaManager.updateSegmentDownloadProgress(metadataFile, segment.getId(), off);
+                MetaManager.updateSegmentDownloadProgress(metadataFile, segment.getId(), off - 1);
             }
         } catch (IOException ignored) {
             LogUtils.error(DownloadSegmentWorker.class, ignored);

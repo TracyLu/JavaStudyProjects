@@ -7,6 +7,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.RandomAccessFile;
+import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
@@ -199,7 +200,7 @@ public class MetaManager {
         } catch (IOException ignored) {
             LogUtils.error(MetaManager.class, ignored);
         } finally {
-            if (null != randomAccessFile) {
+            if ( null != randomAccessFile ) {
                 try {
                     randomAccessFile.close();
                 } catch (IOException ignored) {
@@ -210,15 +211,21 @@ public class MetaManager {
         return task;
     }
 
-    private static boolean checkResumable(URL url) throws IOException {
+    public static boolean checkResumable(URL url) throws IOException {
         boolean resumable = false;
-        URLConnection openConnection;
-        openConnection = url.openConnection();
-        openConnection.setRequestProperty("RANGE", "bytes=" + 0 + "-" + 0);
-        openConnection.connect();
-        String acceptRanges = openConnection.getHeaderField("Accept-Ranges");
+        final HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+        conn.setRequestProperty("RANGE", "bytes=" + 0 + "-" + 0);
+        conn.connect();
+        final int statusCode = conn.getResponseCode();
+        if ( 206 == statusCode ) {
+            resumable = true;
+            return resumable;
+        }
+        final String acceptRanges = conn.getHeaderField("Accept-Ranges");
         if ( "bytes".equalsIgnoreCase(acceptRanges) ) {
             resumable = true;
+        } else {
+            System.out.println("Accept-Ranges" + acceptRanges);
         }
         return resumable;
     }
@@ -232,11 +239,12 @@ public class MetaManager {
         } catch (Exception e) {
             LogUtils.error(MetaManager.class, e); // ignored the exception
         } finally {
-            if (null != raf) {
+            if ( null != raf ) {
                 try {
                     raf.close();
                 } catch (IOException ignored) {
-                    LogUtils.error(MetaManager.class, ignored); // ignored the exception
+                    LogUtils.error(MetaManager.class, ignored); // ignored the
+                                                                // exception
                 }
             }
         }
@@ -478,17 +486,49 @@ public class MetaManager {
     }
 
     public static void updateTaskState(File metadataFile, StateEnum state) throws FileNotFoundException, IOException {
-        RandomAccessFile raf = new RandomAccessFile(metadataFile, "rw");
-        raf.seek(Consts.STATE_POSTION);
-        raf.writeByte(state.ordinal());
+        RandomAccessFile raf = null;
+        try {
+            raf = new RandomAccessFile(metadataFile, "rw");
+            raf.seek(Consts.STATE_POSTION);
+            raf.writeByte(state.ordinal());
+        } finally {
+            if ( null != raf ) {
+                raf.close();
+            }
+        }
     }
 
     public static void updateSegmentDownloadProgress(File metadataFile, int segmentId, long currentBytes) throws FileNotFoundException, IOException {
-        RandomAccessFile raf = new RandomAccessFile(metadataFile, "rw");
-        long segmentStartPosition = Consts.FIRST_SEGMENT_POSITION + Consts.SEGMENT_LENGTH * segmentId;
-        long currentBytesPosition = segmentStartPosition + Consts.SEGMENT_ID_LENGTH + Consts.SEGMENT_START_BYTES_LENGTH + Consts.SEGMENT_END_BYTES_LENGTH;
-        raf.seek(currentBytesPosition);
-        raf.writeLong(currentBytes);
+        RandomAccessFile raf = null;
+        try {
+            raf = new RandomAccessFile(metadataFile, "rw");
+            final long segmentStartPosition = Consts.FIRST_SEGMENT_POSITION + Consts.SEGMENT_LENGTH * segmentId;
+            final long endBytesPosition = segmentStartPosition + Consts.SEGMENT_ID_LENGTH + Consts.SEGMENT_START_BYTES_LENGTH;
+            final long currentBytesPosition = segmentStartPosition + Consts.SEGMENT_ID_LENGTH + Consts.SEGMENT_START_BYTES_LENGTH
+                    + Consts.SEGMENT_END_BYTES_LENGTH;
+            final long statePosition = currentBytesPosition + Consts.SEGMENT_CURRENT_BYTES_LENGTH;
+            // Log current bytes
+            //
+            raf.seek(currentBytesPosition);
+            raf.writeLong(currentBytes);
+            // Get end bytes
+            //
+            raf.seek(endBytesPosition);
+            final long endBytes = raf.readLong();
+            // Update segment state
+            //
+            if ( currentBytes < endBytes ) {
+                raf.seek(statePosition);
+                raf.writeByte(StateEnum.Started.ordinal());
+            } else {
+                raf.seek(statePosition);
+                raf.writeByte(StateEnum.Finished.ordinal());
+            }
+        } finally {
+            if ( null != raf ) {
+                raf.close();
+            }
+        }
     }
 
     public static void initiateMetadataDirs() {

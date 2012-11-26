@@ -75,10 +75,10 @@ public class PauseService implements IService<PauseTaskRequest>, IStateChangeLis
         final StateEnum nextState = (StateEnum) context.getNextState();
         final DownloadProcess reactiveObject = (DownloadProcess) context.getReactiveObject();
         if ( nextState == StateEnum.Prepared || ( nextState == StateEnum.Started ) ) {
-            System.out.println("prcess added");
+            System.out.println("PauseService process added");
             activeProcesses.put(reactiveObject.getUrl(), reactiveObject.getProxy());
         } else {
-            System.out.println("process removed");
+            System.out.println("PauseService process removed");
             activeProcesses.remove(reactiveObject.getUrl());
         }
     }

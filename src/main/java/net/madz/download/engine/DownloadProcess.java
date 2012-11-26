@@ -71,14 +71,15 @@ public class DownloadProcess implements IDownloadProcess {
         } catch (IOException ignored) {
             LogUtils.debug(DownloadProcess.class, ignored.getMessage());
         }
-        List<Segment> segments = task.getSegments();
+        final List<Segment> segments = task.getSegments();
         localThreadPool = Executors.newFixedThreadPool(task.getThreadNumber());
         for ( final Segment segment : segments ) {
-            if ( !pauseFlag ) {
-                DownloadSegmentWorker worker = new DownloadSegmentWorker(proxy, task, segment, dataFile, metadataFile);
-                workers.add(worker);
-                localThreadPool.execute(worker);
+            if ( pauseFlag ) {
+                break;
             }
+            DownloadSegmentWorker worker = new DownloadSegmentWorker(proxy, task, segment, dataFile, metadataFile);
+            workers.add(worker);
+            localThreadPool.submit(worker);
         }
     }
 
