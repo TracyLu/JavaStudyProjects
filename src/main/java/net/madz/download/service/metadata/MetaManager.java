@@ -196,9 +196,16 @@ public class MetaManager {
             System.out.println(headInfo.toString());
         } catch (FileNotFoundException ignored) {
             LogUtils.error(MetaManager.class, ignored);
-        } catch (IOException ignored2) {
-            System.out.println(ignored2.getMessage());
-            LogUtils.error(MetaManager.class, ignored2);
+        } catch (IOException ignored) {
+            LogUtils.error(MetaManager.class, ignored);
+        } finally {
+            if (null != randomAccessFile) {
+                try {
+                    randomAccessFile.close();
+                } catch (IOException ignored) {
+                    LogUtils.error(MetaManager.class, ignored);
+                }
+            }
         }
         return task;
     }
@@ -217,20 +224,30 @@ public class MetaManager {
     }
 
     public static void updateTaskState(DownloadTask task, File logFile) {
+        RandomAccessFile raf = null;
         try {
-            RandomAccessFile raf = new RandomAccessFile(logFile, "rw");
+            raf = new RandomAccessFile(logFile, "rw");
             raf.seek(Consts.STATE_POSTION);
             raf.writeByte(task.getState());
         } catch (Exception e) {
             LogUtils.error(MetaManager.class, e); // ignored the exception
+        } finally {
+            if (null != raf) {
+                try {
+                    raf.close();
+                } catch (IOException ignored) {
+                    LogUtils.error(MetaManager.class, ignored); // ignored the exception
+                }
+            }
         }
     }
 
     public static void deserializeSegmentsInformation(DownloadTask task, File logFile) throws ErrorException {
         int segments = task.getSegmentsNumber();
         StringBuilder segmentsInformation = new StringBuilder();
+        RandomAccessFile raf = null;
         try {
-            RandomAccessFile raf = new RandomAccessFile(logFile, "rw");
+            raf = new RandomAccessFile(logFile, "rw");
             long position = 0;
             for ( int i = 0; i < segments; i++ ) {
                 Segment item = new Segment();
@@ -279,6 +296,14 @@ public class MetaManager {
         } catch (IOException e) {
             LogUtils.error(MetaManager.class, e);
             throw new ErrorException(ErrorMessage.LOG_FILE_IS_NOT_COMPLETE + logFile.getName());
+        } finally {
+            if ( null != raf ) {
+                try {
+                    raf.close();
+                } catch (IOException ignored) {
+                    LogUtils.error(MetaManager.class, ignored);
+                }
+            }
         }
         System.out.println("Segements Information:" + segmentsInformation.toString());
     }
@@ -359,6 +384,14 @@ public class MetaManager {
             LogUtils.error(MetaManager.class, ignored);
         } catch (IOException ignored) {
             LogUtils.error(MetaManager.class, ignored);
+        } finally {
+            if ( null != raf ) {
+                try {
+                    raf.close();
+                } catch (IOException ignored) {
+                    LogUtils.error(MetaManager.class, ignored);
+                }
+            }
         }
     }
 
