@@ -111,7 +111,8 @@ public class TelnetClientTest {
         }
     }
 
-    private ITelnetClient initClient(final Socket socket, final RequestDeserializer deserializer, final ResponseSerializer serializer, final IService<?> service) {
+    private ITelnetClient initClient(final Socket socket, final RequestDeserializer deserializer, final ResponseSerializer serializer,
+            final IService<?> service) {
         TelnetClient client = null;
         try {
             client = new TelnetClient(socket);

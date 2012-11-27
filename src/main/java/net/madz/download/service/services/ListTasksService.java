@@ -9,6 +9,8 @@ import net.madz.core.lifecycle.IStateChangeListener;
 import net.madz.core.lifecycle.ITransition;
 import net.madz.core.lifecycle.StateContext;
 import net.madz.core.lifecycle.impl.StateChangeListenerHub;
+import net.madz.download.agent.ITelnetClient;
+import net.madz.download.agent.impl.TelnetClient;
 import net.madz.download.engine.DownloadProcess;
 import net.madz.download.engine.IDownloadProcess;
 import net.madz.download.engine.IDownloadProcess.StateEnum;
@@ -17,7 +19,7 @@ import net.madz.download.service.IService;
 import net.madz.download.service.IServiceResponse;
 import net.madz.download.service.annotations.Command;
 import net.madz.download.service.annotations.Option;
-import net.madz.download.service.exception.ErrorException;
+import net.madz.download.service.exception.ServiceException;
 import net.madz.download.service.metadata.DownloadTask;
 import net.madz.download.service.metadata.MetaManager;
 import net.madz.download.service.requests.ListTasksRequest;
@@ -31,6 +33,7 @@ public class ListTasksService implements IService<ListTasksRequest>, IStateChang
 
     private ConcurrentHashMap<String, DownloadProcess> activeProcesses = new ConcurrentHashMap<String, DownloadProcess>();
     private List<DownloadTask> tasks;
+    private ITelnetClient client;
 
     @Override
     public void start() {
@@ -49,7 +52,7 @@ public class ListTasksService implements IService<ListTasksRequest>, IStateChang
     }
 
     @Override
-    public IServiceResponse processRequest(ListTasksRequest request) throws ErrorException {
+    public IServiceResponse processRequest(ListTasksRequest request) throws ServiceException {
         tasks = new LinkedList<DownloadTask>();
         if ( request.isAll() ) {
             getAllTasks();
@@ -130,5 +133,10 @@ public class ListTasksService implements IService<ListTasksRequest>, IStateChang
             }
         }
         System.out.println("active processs size" + activeProcesses.size());
+    }
+
+    @Override
+    public void setClient(ITelnetClient client) {
+        this.client = client;
     }
 }

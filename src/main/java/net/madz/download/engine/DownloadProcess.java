@@ -22,7 +22,7 @@ public class DownloadProcess implements IDownloadProcess {
     private File metadataFile;
     private transient File dataFile;
     private transient final ExecutorService receiveUpdateExecutor = Executors.newSingleThreadExecutor();
-    private boolean pauseFlag = false;
+    private volatile boolean pauseFlag = false;
     private transient List<DownloadSegmentWorker> workers = new LinkedList<DownloadSegmentWorker>();
     private IDownloadProcess proxy;
     private ExecutorService localThreadPool;
@@ -131,22 +131,26 @@ public class DownloadProcess implements IDownloadProcess {
     @Override
     public void pause() {
         this.pauseFlag = true;
-        if ( workers.size() > 0 ) {
-            for ( DownloadSegmentWorker worker : workers ) {
-                worker.setPauseFlag(true);
+        this.receiveUpdateExecutor.shutdownNow();
+        this.localThreadPool.shutdownNow();
+        try {
+            while ( !this.localThreadPool.isTerminated() ) {
+                synchronized (this) {
+                    wait(500L);
+                }
             }
+        } catch (InterruptedException ignored) {
         }
         resetProcessWhenNotResumable();
         metadataFile = MetaManager.move(metadataFile, new File("./meta/paused"));
         try {
             MetaManager.updateTaskState(metadataFile, StateEnum.Paused);
+            MetaManager.updateSegmentState(metadataFile, task, StateEnum.Paused);
         } catch (FileNotFoundException ignored) {
             LogUtils.debug(DownloadProcess.class, ignored.getMessage());
         } catch (IOException ignored) {
             LogUtils.debug(DownloadProcess.class, ignored.getMessage());
         }
-        this.receiveUpdateExecutor.shutdown();
-        this.localThreadPool.shutdown();
     }
 
     @Override
@@ -214,5 +218,10 @@ public class DownloadProcess implements IDownloadProcess {
 
     public synchronized IDownloadProcess getProxy() {
         return proxy;
+    }
+
+    @Override
+    public boolean isPaused() {
+        return pauseFlag;
     }
 }

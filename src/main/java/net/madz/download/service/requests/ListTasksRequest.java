@@ -1,7 +1,7 @@
 package net.madz.download.service.requests;
 
 import net.madz.download.service.IServiceRequest;
-import net.madz.download.service.exception.ErrorException;
+import net.madz.download.service.exception.ServiceException;
 
 public class ListTasksRequest implements IServiceRequest {
 
@@ -17,7 +17,7 @@ public class ListTasksRequest implements IServiceRequest {
     }
 
     @Override
-    public void validate() throws ErrorException {
+    public void validate() throws ServiceException {
         // TODO Auto-generated method stub
     }
 

@@ -1,6 +1,6 @@
 package net.madz.download.service.exception;
 
-public class ErrorMessage {
+public class ExceptionMessage {
 
     public static final String COMMAND_NOT_FOUND = "Command could not be found.";
     public static final String COMMAND_OPTION_ILLEGAL = "Command option is illegal.";

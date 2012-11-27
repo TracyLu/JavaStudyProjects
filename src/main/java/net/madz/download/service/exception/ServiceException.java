@@ -1,6 +1,6 @@
 package net.madz.download.service.exception;
 
-public class ErrorException extends Exception {
+public class ServiceException extends Exception {
 
     private static final long serialVersionUID = -3784777249170182306L;
     
@@ -14,7 +14,7 @@ public class ErrorException extends Exception {
         this.message = message;
     }
 
-    public ErrorException(String message) {
+    public ServiceException(String message) {
         setMessage(message);
     }
 }

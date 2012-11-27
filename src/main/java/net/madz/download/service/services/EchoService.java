@@ -1,5 +1,6 @@
 package net.madz.download.service.services;
 
+import net.madz.download.agent.ITelnetClient;
 import net.madz.download.service.IService;
 import net.madz.download.service.IServiceRequest;
 import net.madz.download.service.IServiceResponse;
@@ -12,6 +13,8 @@ import net.madz.download.service.responses.EchoResponse;
 @Command(commandName = "echo", request = EchoRequest.class, arguments = { @Arg(name = "message") }, options = { @Option(shortName = "-l",
         fullName = "--lowerCase", description = "Echo message in lower case.") }, description = "Echo service will echo message.")
 public class EchoService implements IService<IServiceRequest> {
+
+    private ITelnetClient client;
 
     @Override
     public void start() {
@@ -40,5 +43,10 @@ public class EchoService implements IService<IServiceRequest> {
         } else {
             return new EchoResponse(request.toString());
         }
+    }
+
+    @Override
+    public void setClient(ITelnetClient client) {
+        this.client = client;
     }
 }

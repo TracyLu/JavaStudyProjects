@@ -17,8 +17,8 @@ import java.util.List;
 
 import net.madz.download.LogUtils;
 import net.madz.download.engine.IDownloadProcess.StateEnum;
-import net.madz.download.service.exception.ErrorException;
-import net.madz.download.service.exception.ErrorMessage;
+import net.madz.download.service.exception.ServiceException;
+import net.madz.download.service.exception.ExceptionMessage;
 import net.madz.download.service.requests.CreateTaskRequest;
 
 public class MetaManager {
@@ -250,7 +250,7 @@ public class MetaManager {
         }
     }
 
-    public static void deserializeSegmentsInformation(DownloadTask task, File logFile) throws ErrorException {
+    public static void deserializeSegmentsInformation(DownloadTask task, File logFile) throws ServiceException {
         int segments = task.getSegmentsNumber();
         StringBuilder segmentsInformation = new StringBuilder();
         RandomAccessFile raf = null;
@@ -300,10 +300,10 @@ public class MetaManager {
             }
         } catch (FileNotFoundException e) {
             LogUtils.error(MetaManager.class, e);
-            throw new ErrorException(ErrorMessage.LOG_FILE_WAS_NOT_FOUND + logFile.getName());
+            throw new ServiceException(ExceptionMessage.LOG_FILE_WAS_NOT_FOUND + logFile.getName());
         } catch (IOException e) {
             LogUtils.error(MetaManager.class, e);
-            throw new ErrorException(ErrorMessage.LOG_FILE_IS_NOT_COMPLETE + logFile.getName());
+            throw new ServiceException(ExceptionMessage.LOG_FILE_IS_NOT_COMPLETE + logFile.getName());
         } finally {
             if ( null != raf ) {
                 try {
@@ -476,7 +476,18 @@ public class MetaManager {
     private static void delete(File file) {
         if ( !file.exists() ) return;
         if ( file.isFile() ) {
-            file.delete();
+            int count = 0;
+            while ( !file.delete() ) {
+                count++;
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException ignored) {
+                    LogUtils.error(MetaManager.class, ignored);
+                }
+                if ( count > 10 ) {
+                    break;
+                }
+            }
         } else {
             for ( File f : file.listFiles() ) {
                 delete(f);
@@ -547,7 +558,7 @@ public class MetaManager {
         }
     }
 
-    public static List<DownloadTask> load(String root) {
+    public synchronized static List<DownloadTask> load(String root) {
         List<DownloadTask> results = new LinkedList<DownloadTask>();
         List<File> files = new LinkedList<File>();
         files = parseFolder(files, new File(root));
@@ -555,7 +566,7 @@ public class MetaManager {
             DownloadTask task = MetaManager.deserializeHeadInformation(file);
             try {
                 MetaManager.deserializeSegmentsInformation(task, file);
-            } catch (ErrorException ignored) {
+            } catch (ServiceException ignored) {
                 LogUtils.error(MetaManager.class, ignored);
             }
             task.toString();
@@ -577,5 +588,31 @@ public class MetaManager {
             }
         }
         return result;
+    }
+
+    public static void updateSegmentState(File metadataFile, DownloadTask task, StateEnum state) throws FileNotFoundException, IOException {
+        RandomAccessFile raf = null;
+        try {
+            raf = new RandomAccessFile(metadataFile, "rw");
+            for ( int i = 0; i < task.getSegmentsNumber(); i++ ) {
+                final long segmentStartPosition = Consts.FIRST_SEGMENT_POSITION + Consts.SEGMENT_LENGTH * i;
+                final long statePosition = segmentStartPosition + Consts.SEGMENT_ID_LENGTH + Consts.SEGMENT_START_BYTES_LENGTH
+                        + Consts.SEGMENT_END_BYTES_LENGTH + Consts.SEGMENT_CURRENT_BYTES_LENGTH;
+                // Update segment state
+                //
+                raf.seek(statePosition);
+                byte lastState = raf.readByte();
+                //
+                //
+                if ( StateEnum.Prepared.ordinal() == lastState || StateEnum.Started.ordinal() == lastState ) {
+                    raf.seek(statePosition);
+                    raf.writeByte(state.ordinal());
+                }
+            }
+        } finally {
+            if ( null != raf ) {
+                raf.close();
+            }
+        }
     }
 }

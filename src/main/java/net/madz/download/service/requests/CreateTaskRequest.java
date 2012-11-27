@@ -5,8 +5,8 @@ import java.net.MalformedURLException;
 import java.net.URL;
 
 import net.madz.download.service.IServiceRequest;
-import net.madz.download.service.exception.ErrorException;
-import net.madz.download.service.exception.ErrorMessage;
+import net.madz.download.service.exception.ServiceException;
+import net.madz.download.service.exception.ExceptionMessage;
 
 public final class CreateTaskRequest implements IServiceRequest {
 
@@ -66,19 +66,19 @@ public final class CreateTaskRequest implements IServiceRequest {
     }
 
     @Override
-    public void validate() throws ErrorException {
+    public void validate() throws ServiceException {
         // validate url
         //
         try {
             new URL(url);
         } catch (MalformedURLException e) {
-            throw new ErrorException(ErrorMessage.URL_NOT_AVAILABLE);
+            throw new ServiceException(ExceptionMessage.URL_NOT_AVAILABLE);
         }
         // validate folder
         //
         File file = new File(folder);
         if ( !file.exists() ) {
-            throw new ErrorException(ErrorMessage.FOLDER_NOT_EXISTS);
+            throw new ServiceException(ExceptionMessage.FOLDER_NOT_EXISTS);
         }
         // validate filename
         // ignored for the moment
@@ -87,7 +87,7 @@ public final class CreateTaskRequest implements IServiceRequest {
         // validate thread number
         //
         if (this.threadNumber <= 0 || threadNumber > 20) {
-            throw new ErrorException(ErrorMessage.THREAD_NUMBER_ILLEGAL);
+            throw new ServiceException(ExceptionMessage.THREAD_NUMBER_ILLEGAL);
         }
     }
 }

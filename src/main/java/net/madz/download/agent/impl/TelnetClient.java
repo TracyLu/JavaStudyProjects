@@ -16,8 +16,8 @@ import net.madz.download.service.IService;
 import net.madz.download.service.IServiceRequest;
 import net.madz.download.service.IServiceResponse;
 import net.madz.download.service.ServiceHub;
-import net.madz.download.service.exception.ErrorException;
-import net.madz.download.service.exception.ErrorMessage;
+import net.madz.download.service.exception.ExceptionMessage;
+import net.madz.download.service.exception.ServiceException;
 import net.madz.download.service.requests.HelpRequest;
 
 public class TelnetClient<R extends IServiceRequest, S extends IService<R>> implements ITelnetClient {
@@ -78,7 +78,6 @@ public class TelnetClient<R extends IServiceRequest, S extends IService<R>> impl
                         final RequestDeserializer deserializer = new RequestDeserializer();
                         final ResponseSerializer serializer = new ResponseSerializer();
                         LogUtils.debug(TelnetClient.class, "Received request: " + plainTextRequest);
-                        
                         R request = null;
                         S service = null;
                         try {
@@ -88,17 +87,17 @@ public class TelnetClient<R extends IServiceRequest, S extends IService<R>> impl
                         } catch (IllegalStateException ex) {
                             request = (R) handleCommandIllegal(deserializer, plainTextRequest, ex);
                             service = (S) ServiceHub.getInstance().getService("help");
-                        } catch (ErrorException ex) {
+                        } catch (ServiceException ex) {
                             printAndFlush(ex.getMessage());
                             continue;
                         }
-
                         IServiceResponse serviceResponse = null;
                         try {
+                            service.setClient(TelnetClient.this);
                             serviceResponse = service.processRequest(request);
                             final String plainTextResponse = serializer.marshall(serviceResponse);
                             printAndFlush(plainTextResponse);
-                        } catch (ErrorException ex) {
+                        } catch (ServiceException ex) {
                             printAndFlush(ex.getMessage());
                             continue;
                         }
@@ -124,7 +123,7 @@ public class TelnetClient<R extends IServiceRequest, S extends IService<R>> impl
                 IServiceRequest request;
                 HelpRequest helpRequest = new HelpRequest();
                 helpRequest.setCommandName("help");
-                if ( ErrorMessage.COMMAND_NOT_FOUND.equalsIgnoreCase(ex.getMessage()) ) {
+                if ( ExceptionMessage.COMMAND_NOT_FOUND.equalsIgnoreCase(ex.getMessage()) ) {
                     helpRequest.setArgCommandName("");
                     request = helpRequest;
                 } else {
@@ -139,6 +138,26 @@ public class TelnetClient<R extends IServiceRequest, S extends IService<R>> impl
                 return request;
             }
         });
+    }
+
+    public String acquireConfirm(String request) {
+        if ( null == request || 0 >= request.length() ) {
+            LogUtils.error(TelnetClient.class, new Exception("Please give correct feedback."));
+        }
+        writer.write(request);
+        writer.flush();
+        String response = null;
+        try {
+            response = reader.readLine();
+            while ( null == response || 0 >= response.length() ) {
+                writer.write(request);
+                writer.flush();
+                response = reader.readLine();
+            }
+        } catch (IOException e) {
+            LogUtils.error(TelnetClient.class, e);
+        }
+        return response;
     }
 
     private void validatePrequesit() {

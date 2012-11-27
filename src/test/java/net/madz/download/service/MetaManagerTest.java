@@ -9,7 +9,7 @@ import java.net.URL;
 
 import junit.framework.Assert;
 
-import net.madz.download.service.exception.ErrorException;
+import net.madz.download.service.exception.ServiceException;
 import net.madz.download.service.metadata.DownloadTask;
 import net.madz.download.service.metadata.MetaManager;
 import net.madz.download.service.metadata.Segment;
@@ -52,7 +52,7 @@ public class MetaManagerTest {
     @Test
     public void testDeserializeHeadInformation() {
         File file = null;
-        file = new File("./meta/started/nt.dmg_log");
+        file = new File("./meta/paused/nt.dmg_log");
         DownloadTask task = MetaManager.deserializeHeadInformation(file);
         System.out.println(task.toString());
     }
@@ -65,11 +65,11 @@ public class MetaManagerTest {
     @Test
     public void testDeserializeSegmentsInformation() {
         File file = null;
-        file = new File("./meta/started/nt.dmg_log");
+        file = new File("./meta/paused/nt.dmg_log");
         DownloadTask task = MetaManager.deserializeHeadInformation(file);
         try {
             MetaManager.deserializeSegmentsInformation(task, file);
-        } catch (ErrorException e) {
+        } catch (ServiceException e) {
             fail("Error occurred.");
         }
         for ( Segment segment : task.getSegments() ) {

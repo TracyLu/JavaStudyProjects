@@ -4,6 +4,8 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map.Entry;
 
+import net.madz.download.agent.ITelnetClient;
+import net.madz.download.agent.impl.TelnetClient;
 import net.madz.download.service.IService;
 import net.madz.download.service.IServiceRequest;
 import net.madz.download.service.IServiceResponse;
@@ -19,6 +21,7 @@ import net.madz.download.service.responses.HelpResponse;
 public class HelpService implements IService<HelpRequest> {
 
     private final static HelpService service = new HelpService();
+    private ITelnetClient client;
 
     public static HelpService getInstance(String commandName) {
         return service;
@@ -111,5 +114,10 @@ public class HelpService implements IService<HelpRequest> {
         }
         response.setCommandName("Help");
         response.setDescription(description.toString());
+    }
+
+    @Override
+    public void setClient(ITelnetClient client) {
+        this.client = client;
     }
 }

@@ -16,7 +16,6 @@ public final class DownloadSegmentWorker implements Runnable {
 
     private final DownloadTask task;
     private final Segment segment;
-    private volatile boolean pauseFlag;
     private IDownloadProcess process;
     private File dataFile;
     private File metadataFile;
@@ -75,10 +74,6 @@ public final class DownloadSegmentWorker implements Runnable {
     }
 
     public synchronized boolean isPauseFlag() {
-        return pauseFlag;
-    }
-
-    public synchronized void setPauseFlag(boolean pauseFlag) {
-        this.pauseFlag = pauseFlag;
+        return this.process.isPaused();
     }
 }

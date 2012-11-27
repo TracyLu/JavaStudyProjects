@@ -6,6 +6,8 @@ import net.madz.core.lifecycle.IStateChangeListener;
 import net.madz.core.lifecycle.ITransition;
 import net.madz.core.lifecycle.StateContext;
 import net.madz.core.lifecycle.impl.StateChangeListenerHub;
+import net.madz.download.agent.ITelnetClient;
+import net.madz.download.agent.impl.TelnetClient;
 import net.madz.download.engine.DownloadProcess;
 import net.madz.download.engine.IDownloadProcess;
 import net.madz.download.engine.IDownloadProcess.StateEnum;
@@ -14,7 +16,7 @@ import net.madz.download.service.IService;
 import net.madz.download.service.IServiceResponse;
 import net.madz.download.service.annotations.Arg;
 import net.madz.download.service.annotations.Command;
-import net.madz.download.service.exception.ErrorException;
+import net.madz.download.service.exception.ServiceException;
 import net.madz.download.service.requests.PauseTaskRequest;
 import net.madz.download.service.responses.PauseServiceResponse;
 
@@ -24,6 +26,7 @@ public class PauseService implements IService<PauseTaskRequest>, IStateChangeLis
 
     static ConcurrentHashMap<String, IDownloadProcess> activeProcesses = new ConcurrentHashMap<String, IDownloadProcess>();
     private PauseTaskRequest request;
+    private ITelnetClient client;
 
     @Override
     public void start() {
@@ -49,7 +52,7 @@ public class PauseService implements IService<PauseTaskRequest>, IStateChangeLis
     }
 
     @Override
-    public IServiceResponse processRequest(PauseTaskRequest request) throws ErrorException {
+    public IServiceResponse processRequest(PauseTaskRequest request) throws ServiceException {
         System.out.println("Enter PauseService");
         final IDownloadProcess proxy = activeProcesses.get(request.getUrl());
         proxy.pause();
@@ -81,5 +84,10 @@ public class PauseService implements IService<PauseTaskRequest>, IStateChangeLis
             System.out.println("PauseService process removed");
             activeProcesses.remove(reactiveObject.getUrl());
         }
+    }
+
+    @Override
+    public void setClient(ITelnetClient client) {
+        this.client = client;
     }
 }
