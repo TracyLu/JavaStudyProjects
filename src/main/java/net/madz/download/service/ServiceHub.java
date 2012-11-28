@@ -10,8 +10,9 @@ import net.madz.download.service.services.EchoService;
 import net.madz.download.service.services.HelpService;
 import net.madz.download.service.services.ListTasksService;
 import net.madz.download.service.services.PauseService;
+import net.madz.download.service.services.ResumeTaskService;
 
-@Services({ EchoService.class, HelpService.class, CreateTaskService.class, PauseService.class, ListTasksService.class })
+@Services({ EchoService.class, HelpService.class, CreateTaskService.class, PauseService.class, ListTasksService.class, ResumeTaskService.class })
 public class ServiceHub {
 
     private static ServiceHub serviceHub;

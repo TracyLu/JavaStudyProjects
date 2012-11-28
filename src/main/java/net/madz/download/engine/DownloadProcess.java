@@ -9,10 +9,12 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import net.madz.download.LogUtils;
+import net.madz.download.service.exception.ServiceException;
 import net.madz.download.service.metadata.DownloadTask;
 import net.madz.download.service.metadata.MetaManager;
 import net.madz.download.service.metadata.Segment;
 import net.madz.download.service.requests.CreateTaskRequest;
+import net.madz.download.service.requests.ResumeTaskRequest;
 
 public class DownloadProcess implements IDownloadProcess {
 
@@ -32,6 +34,19 @@ public class DownloadProcess implements IDownloadProcess {
         this.task = MetaManager.createDownloadTask(request);
         metadataFile = new File("./meta/new/" + request.getFilename() + "_log");
         MetaManager.serializeForNewState(request, metadataFile);
+    }
+
+    public DownloadProcess(ResumeTaskRequest request) {
+        super();
+        metadataFile = new File("./meta/paused/" + request.getTaskName() + "_log");
+        this.task = MetaManager.deserializeHeadInformation(metadataFile);
+        try {
+            MetaManager.deserializeSegmentsInformation(task, metadataFile);
+        } catch (ServiceException ignored) {
+            LogUtils.error(DownloadProcess.class, ignored);
+        }
+        this.receiveBytes = task.getReceivedBytes();
+        System.out.println("Received Bytes:" + this.receiveBytes);
     }
 
     @SuppressWarnings("unchecked")
@@ -77,9 +92,11 @@ public class DownloadProcess implements IDownloadProcess {
             if ( pauseFlag ) {
                 break;
             }
-            DownloadSegmentWorker worker = new DownloadSegmentWorker(proxy, task, segment, dataFile, metadataFile);
-            workers.add(worker);
-            localThreadPool.submit(worker);
+            if ( segment.getCurrentBytes() < segment.getEndBytes() ) {
+                DownloadSegmentWorker worker = new DownloadSegmentWorker(proxy, task, segment, dataFile, metadataFile);
+                workers.add(worker);
+                localThreadPool.submit(worker);
+            }
         }
     }
 
@@ -197,6 +214,17 @@ public class DownloadProcess implements IDownloadProcess {
 
     @Override
     public void resume() {
+        try {
+            MetaManager.updateTaskState(metadataFile, StateEnum.Prepared);
+            MetaManager.updateSegmentState(metadataFile, task, StateEnum.Prepared);
+        } catch (FileNotFoundException ignored) {
+            LogUtils.error(DownloadProcess.class, ignored);
+        } catch (IOException ignored) {
+            LogUtils.error(DownloadProcess.class, ignored);
+        }
+        metadataFile = MetaManager.move(metadataFile, new File("./meta/prepared"));
+        File folder = task.getFolder();
+        dataFile = new File(folder, task.getFileName());
     }
 
     public synchronized long getReceiveBytes() {

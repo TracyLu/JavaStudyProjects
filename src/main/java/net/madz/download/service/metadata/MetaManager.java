@@ -592,6 +592,7 @@ public class MetaManager {
 
     public static void updateSegmentState(File metadataFile, DownloadTask task, StateEnum state) throws FileNotFoundException, IOException {
         RandomAccessFile raf = null;
+        List<Segment> segments = task.getSegments();
         try {
             raf = new RandomAccessFile(metadataFile, "rw");
             for ( int i = 0; i < task.getSegmentsNumber(); i++ ) {
@@ -607,6 +608,11 @@ public class MetaManager {
                 if ( StateEnum.Prepared.ordinal() == lastState || StateEnum.Started.ordinal() == lastState ) {
                     raf.seek(statePosition);
                     raf.writeByte(state.ordinal());
+                }
+                if ( StateEnum.Paused.ordinal() == lastState ) {
+                    raf.seek(statePosition);
+                    raf.writeByte(state.ordinal());
+                    segments.get(i).setState((byte) state.ordinal());
                 }
             }
         } finally {

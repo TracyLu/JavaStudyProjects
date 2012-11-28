@@ -61,6 +61,17 @@ public final class DownloadTask implements Serializable {
         this.totalLength = totalLength;
     }
 
+    public long getReceivedBytes() {
+        long receivedBytes = 0;
+        for ( int i = 0; i < this.segmentsNumber; i++ ) {
+            Segment segment = this.segments.get(i);
+            long startBytes = segment.getStartBytes();
+            long currentBytes = segment.getCurrentBytes();
+            receivedBytes += currentBytes - startBytes + 1;
+        }
+        return receivedBytes;
+    }
+
     public int getSegmentsNumber() {
         return segmentsNumber;
     }

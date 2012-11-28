@@ -38,21 +38,22 @@ public final class DownloadSegmentWorker implements Runnable {
         int size = 0;
         try {
             openConnection = (HttpURLConnection) url.openConnection();
-            openConnection.setRequestProperty("RANGE", "bytes=" + segment.getStartBytes() + "-" + segment.getEndBytes());
+            final long nextByte = segment.getCurrentBytes() + 1;
+            openConnection.setRequestProperty("RANGE", "bytes=" + nextByte + "-" + segment.getEndBytes());
             openConnection.connect();
             inputStream = openConnection.getInputStream();
             randomAccessDataFile = new RandomAccessFile(dataFile, "rw");
-            long off = segment.getStartBytes();
+            long offset = nextByte;
             while ( ( !isPauseFlag() ) && ( size = inputStream.read(buf) ) != -1 ) {
-                randomAccessDataFile.seek(off);
+                randomAccessDataFile.seek(offset);
                 randomAccessDataFile.write(buf, 0, size);
                 synchronized (process) {
                     if ( !isPauseFlag() ) {
                         process.receive(size);
+                        offset += size;
+                        MetaManager.updateSegmentDownloadProgress(metadataFile, segment.getId(), offset - 1);
                     }
                 }
-                off += size;
-                MetaManager.updateSegmentDownloadProgress(metadataFile, segment.getId(), off - 1);
             }
         } catch (IOException ignored) {
             LogUtils.error(DownloadSegmentWorker.class, ignored);

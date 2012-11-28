@@ -280,7 +280,7 @@ public interface IDownloadProcess extends Serializable, IReactiveObject {
             //and enable Receive transition on Paused State is to write the load received after paused state.
             Paused.transitionFunction.put(Receive, Paused);
             Paused.transitionFunction.put(Restart, New);
-            Paused.transitionFunction.put(Resume, New);
+            Paused.transitionFunction.put(Resume, Prepared);
             Paused.transitionFunction.put(Remove, Removed);
             
             Finished.transitionFunction.put(Remove, Removed);
