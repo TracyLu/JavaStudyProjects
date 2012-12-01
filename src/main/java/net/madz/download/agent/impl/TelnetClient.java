@@ -52,6 +52,7 @@ public class TelnetClient<R extends IServiceRequest, S extends IService<R>> impl
         }
         validatePrequesit();
         listeningThread = allocatListeningThread();
+        listeningThread.setName("TelnetClient listening thread");
         listeningThread.start();
         while ( !started ) {
             try {
@@ -81,7 +82,6 @@ public class TelnetClient<R extends IServiceRequest, S extends IService<R>> impl
                         R request = null;
                         S service = null;
                         try {
-                            printAndFlush("System received your request.");
                             request = (R) new RequestDeserializer().unmarshall(plainTextRequest);
                             service = (S) ServiceHub.getInstance().getService(request.getCommandName());
                         } catch (IllegalStateException ex) {

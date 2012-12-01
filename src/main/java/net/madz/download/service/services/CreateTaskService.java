@@ -126,6 +126,9 @@ public class CreateTaskService implements IService<CreateTaskRequest>, IStateCha
         boolean result = false;
         List<DownloadTask> tasks = MetaManager.load("./meta");
         for ( DownloadTask task : tasks ) {
+            if (null == task || null == task.getUrl()) {
+                return result;
+            }
             if ( request.getUrl().equalsIgnoreCase(task.getUrl().toString()) ) {
                 result = true;
             }

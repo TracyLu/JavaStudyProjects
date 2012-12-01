@@ -50,6 +50,7 @@ public class ServiceEndpoint implements IServiceEndpoint {
                 }
             }
         });
+        workingThread.setName("ServiceEndpint working thread");
         workingThread.start();
         try {
             while ( !isStarted() ) {
