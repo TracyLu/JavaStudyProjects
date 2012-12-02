@@ -38,7 +38,12 @@ public final class DownloadSegmentWorker implements Runnable {
         int size = 0;
         try {
             openConnection = (HttpURLConnection) url.openConnection();
-            final long nextByte = segment.getCurrentBytes() + 1;
+            long nextByte = 0;
+            if ( segment.getStartBytes() == segment.getCurrentBytes() ) {
+                nextByte = segment.getStartBytes();
+            } else if ( segment.getStartBytes() < segment.getCurrentBytes() ) {
+                nextByte = segment.getCurrentBytes() + 1;
+            }
             openConnection.setRequestProperty("RANGE", "bytes=" + nextByte + "-" + segment.getEndBytes());
             openConnection.connect();
             inputStream = openConnection.getInputStream();

@@ -11,14 +11,14 @@ import net.madz.download.service.metadata.MetaManager;
 public class ResumeTaskRequest implements IServiceRequest {
 
     private String commandName;
-    private String taskName;
+    private String id;
 
-    public String getTaskName() {
-        return taskName;
+    public int getId() {
+        return Integer.valueOf(id);
     }
 
-    public void setTaskName(String taskName) {
-        this.taskName = taskName;
+    public void setId(String id) {
+        this.id = id;
     }
 
     public void setCommandName(String commandName) {
@@ -34,12 +34,12 @@ public class ResumeTaskRequest implements IServiceRequest {
     public void validate() throws ServiceException {
         List<DownloadTask> tasks = MetaManager.load("./meta/paused");
         boolean matched = false;
-        for (DownloadTask task: tasks) {
-            if (taskName.equalsIgnoreCase(task.getFileName())) {
+        for ( DownloadTask task : tasks ) {
+            if ( this.getId() == task.getId() ) {
                 matched = true;
             }
         }
-        if (!matched) {
+        if ( !matched ) {
             throw new ServiceException(ExceptionMessage.TASK_NOT_FOUND);
         }
     }

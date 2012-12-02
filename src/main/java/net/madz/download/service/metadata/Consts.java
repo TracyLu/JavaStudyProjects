@@ -2,6 +2,7 @@ package net.madz.download.service.metadata;
 
 public class Consts {
 
+    public static final int ID_LENGTH = 4;
     public static final int URL_SIZE_LENGTH = 4;
     public static final int URL_LENGTH = 1000 * 3;
     public static final int REFER_URL_SIZE_LENGTH = 4;
@@ -23,7 +24,8 @@ public class Consts {
     public static final int SEGMENT_STATE_LENGTH = 1;
     public static final int SEGMENT_LENGTH = SEGMENT_ID_LENGTH + SEGMENT_START_BYTES_LENGTH + SEGMENT_END_BYTES_LENGTH + SEGMENT_CURRENT_BYTES_LENGTH
             + SEGMENT_STATE_LENGTH;
-    public static final long URL_SIZE_POSITION = 0;
+    public static final long ID_POSITION = 0;
+    public static final long URL_SIZE_POSITION = ID_POSITION + ID_LENGTH;
     public static final long URL_POSITION = URL_SIZE_LENGTH + URL_SIZE_POSITION;
     public static final long REFER_URL_SIZE_POSITION = URL_POSITION + URL_LENGTH;
     public static final long REFER_URL_POSITION = REFER_URL_SIZE_POSITION + REFER_URL_SIZE_LENGTH;

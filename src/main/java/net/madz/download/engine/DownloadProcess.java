@@ -33,19 +33,14 @@ public class DownloadProcess implements IDownloadProcess {
         super();
         this.task = MetaManager.createDownloadTask(request);
         metadataFile = new File("./meta/new/" + request.getFilename() + "_log");
-        MetaManager.serializeForNewState(request, metadataFile);
+        MetaManager.serializeForNewState(task, metadataFile);
     }
 
     public DownloadProcess(ResumeTaskRequest request) {
         super();
-        metadataFile = new File("./meta/paused/" + request.getTaskName() + "_log");
-        this.task = MetaManager.deserializeHeadInformation(metadataFile);
-        try {
-            MetaManager.deserializeSegmentsInformation(task, metadataFile);
-        } catch (ServiceException ignored) {
-            LogUtils.error(DownloadProcess.class, ignored);
-        }
-        this.receiveBytes = task.getReceivedBytes();
+        this.task = MetaManager.load("./meta/paused", request.getId());
+        metadataFile = new File("./meta/paused/" + this.task.getFileName() + "_log");
+        this.receiveBytes = this.task.getReceivedBytes();
         System.out.println("Received Bytes:" + this.receiveBytes);
     }
 
@@ -57,8 +52,9 @@ public class DownloadProcess implements IDownloadProcess {
         return states[stateIndex];
     }
 
-    void setState(StateEnum state) {
+    void setState(StateEnum state) throws FileNotFoundException, IOException {
         this.task.setState((byte) state.ordinal());
+        MetaManager.updateTaskState(metadataFile, state);
     }
 
     @Override
@@ -79,13 +75,6 @@ public class DownloadProcess implements IDownloadProcess {
     @Override
     public void start() {
         metadataFile = MetaManager.move(metadataFile, new File("./meta/started"));
-        try {
-            MetaManager.updateTaskState(metadataFile, StateEnum.Started);
-        } catch (FileNotFoundException ignored) {
-            LogUtils.debug(DownloadProcess.class, ignored.getMessage());
-        } catch (IOException ignored) {
-            LogUtils.debug(DownloadProcess.class, ignored.getMessage());
-        }
         final List<Segment> segments = task.getSegments();
         localThreadPool = Executors.newFixedThreadPool(task.getThreadNumber());
         for ( final Segment segment : segments ) {
@@ -161,7 +150,6 @@ public class DownloadProcess implements IDownloadProcess {
         resetProcessWhenNotResumable();
         metadataFile = MetaManager.move(metadataFile, new File("./meta/paused"));
         try {
-            MetaManager.updateTaskState(metadataFile, StateEnum.Paused);
             MetaManager.updateSegmentState(metadataFile, task, StateEnum.Paused);
         } catch (FileNotFoundException ignored) {
             LogUtils.debug(DownloadProcess.class, ignored.getMessage());
@@ -173,13 +161,6 @@ public class DownloadProcess implements IDownloadProcess {
     @Override
     public void finish() {
         System.out.println("============Enter finish===========");
-        try {
-            MetaManager.updateTaskState(metadataFile, StateEnum.Finished);
-        } catch (FileNotFoundException ignored) {
-            LogUtils.error(DownloadProcess.class, ignored);
-        } catch (IOException ignored) {
-            LogUtils.error(DownloadProcess.class, ignored);
-        }
         metadataFile = MetaManager.move(metadataFile, new File("./meta/finished"));
         this.receiveUpdateExecutor.shutdown();
         this.localThreadPool.shutdown();
@@ -189,13 +170,6 @@ public class DownloadProcess implements IDownloadProcess {
     public void err() {
         task.setState((byte) StateEnum.Failed.ordinal());
         metadataFile = MetaManager.move(metadataFile, new File("./meta/failed"));
-        try {
-            MetaManager.updateTaskState(metadataFile, StateEnum.Failed);
-        } catch (FileNotFoundException ignored) {
-            LogUtils.debug(DownloadProcess.class, ignored.getMessage());
-        } catch (IOException ignored) {
-            LogUtils.debug(DownloadProcess.class, ignored.getMessage());
-        }
         this.receiveUpdateExecutor.shutdown();
         this.localThreadPool.shutdown();
     }
@@ -215,7 +189,6 @@ public class DownloadProcess implements IDownloadProcess {
     @Override
     public void resume() {
         try {
-            MetaManager.updateTaskState(metadataFile, StateEnum.Prepared);
             MetaManager.updateSegmentState(metadataFile, task, StateEnum.Prepared);
         } catch (FileNotFoundException ignored) {
             LogUtils.error(DownloadProcess.class, ignored);
@@ -240,8 +213,8 @@ public class DownloadProcess implements IDownloadProcess {
     }
 
     @Override
-    public String getUrl() {
-        return this.task.getUrl().toString();
+    public int getTaskId() {
+        return this.task.getId();
     }
 
     public synchronized IDownloadProcess getProxy() {

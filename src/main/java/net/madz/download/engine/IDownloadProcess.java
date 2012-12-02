@@ -336,7 +336,7 @@ public interface IDownloadProcess extends Serializable, IReactiveObject {
     @Transition
     void resume();
     
-    String getUrl();
+    int getTaskId();
 
     boolean isPaused();
 }

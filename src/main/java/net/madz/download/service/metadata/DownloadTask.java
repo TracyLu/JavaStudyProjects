@@ -10,6 +10,7 @@ import java.util.List;
 public final class DownloadTask implements Serializable {
 
     private static final long serialVersionUID = 4357100059823468260L;
+    private int id;
     private URL url;
     private URL referURL;
     private File folder;
@@ -21,6 +22,12 @@ public final class DownloadTask implements Serializable {
     private byte state;
     private List<Segment> segments = new LinkedList<Segment>();
 
+    public int getId() {
+        return id;
+    }
+    public void setId(int id) {
+        this.id = id;
+    }
     public URL getUrl() {
         return url;
     }

@@ -17,6 +17,7 @@ public class ListTasksResponse implements IServiceResponse {
         }
         for ( DownloadTask task : tasks ) {
             count++;
+            result.append(task.getId() + "\t");
             result.append(task.getUrl() + "\t");
             result.append(task.getFolder() + "\t");
             result.append(task.getFileName() + "\t");
@@ -30,7 +31,7 @@ public class ListTasksResponse implements IServiceResponse {
         if ( 0 == count ) {
             return "There is no result satisfied your requirement.";
         } else {
-            return "There are " + count + " tasks returned.\n" + result;
+            return count + " tasks returned.\n" + result;
         }
     }
 }

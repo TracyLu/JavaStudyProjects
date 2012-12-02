@@ -53,6 +53,7 @@ public class MetaManager {
 
     public static DownloadTask createDownloadTask(CreateTaskRequest request) {
         DownloadTask task = new DownloadTask();
+        task.setId(IdFactory.getInstance().generate());
         URL url = null;
         URL referURL = null;
         boolean resumable = false;
@@ -103,6 +104,12 @@ public class MetaManager {
         StringBuilder headInfo = new StringBuilder();
         try {
             randomAccessFile = new RandomAccessFile(file, "rw");
+            // Task ID
+            //
+            randomAccessFile.seek(Consts.ID_POSITION);
+            final int id = randomAccessFile.readInt();
+            task.setId(id);
+            headInfo.append(" ID:" + id);
             // URL
             //
             randomAccessFile.seek(Consts.URL_SIZE_POSITION);
@@ -316,13 +323,18 @@ public class MetaManager {
         System.out.println("Segements Information:" + segmentsInformation.toString());
     }
 
-    public static void serializeForNewState(CreateTaskRequest request, File file) {
+    public static void serializeForNewState(DownloadTask task, File file) {
         RandomAccessFile randomAccessFile = null;
         try {
             randomAccessFile = new RandomAccessFile(file, "rw");
+            // Task Id
+            //
+            int id = task.getId();
+            randomAccessFile.seek(Consts.ID_POSITION);
+            randomAccessFile.writeInt(id);
             // URL
             //
-            byte[] urlBytes = request.getUrl().getBytes("utf8");
+            byte[] urlBytes = task.getUrl().toString().getBytes("utf8");
             randomAccessFile.seek(Consts.URL_SIZE_POSITION);
             randomAccessFile.writeInt(urlBytes.length);
             randomAccessFile.seek(Consts.URL_POSITION);
@@ -330,28 +342,28 @@ public class MetaManager {
             // REFER URL
             //
             randomAccessFile.seek(Consts.REFER_URL_SIZE_POSITION);
-            byte[] referUrlBytes = request.getReferURL().getBytes("utf8");
+            byte[] referUrlBytes = task.getReferURL().toString().getBytes("utf8");
             randomAccessFile.writeInt(referUrlBytes.length);
             randomAccessFile.seek(Consts.REFER_URL_POSITION);
             randomAccessFile.write(referUrlBytes);
             // FOLDER
             //
             randomAccessFile.seek(Consts.FOLDER_SIZE_POSITION);
-            byte[] folderBytes = request.getFolder().getBytes("utf8");
+            byte[] folderBytes = task.getFolder().toString().getBytes("utf8");
             randomAccessFile.writeInt(folderBytes.length);
             randomAccessFile.seek(Consts.FOLDER_POSITION);
             randomAccessFile.write(folderBytes);
             // File name
             //
             randomAccessFile.seek(Consts.FILE_NAME_SIZE_POSITION);
-            byte[] filenameBytes = request.getFilename().getBytes("utf8");
+            byte[] filenameBytes = task.getFileName().getBytes("utf8");
             randomAccessFile.writeInt(filenameBytes.length);
             randomAccessFile.seek(Consts.FILE_NAME_POSITION);
             randomAccessFile.write(filenameBytes);
             // Thread number
             //
             randomAccessFile.seek(Consts.THREAD_NUMBER_POSITION);
-            randomAccessFile.writeByte(request.getThreadNumber());
+            randomAccessFile.writeByte(task.getThreadNumber());
             // State
             //
             randomAccessFile.seek(Consts.STATE_POSTION);
@@ -473,7 +485,7 @@ public class MetaManager {
         return targetFile;
     }
 
-    private static void delete(File file) {
+    public static void delete(File file) {
         if ( !file.exists() ) return;
         if ( file.isFile() ) {
             int count = 0;
@@ -574,7 +586,23 @@ public class MetaManager {
         }
         return results;
     }
-
+    public synchronized static DownloadTask load(String root, int taskId) {
+        DownloadTask result = null;
+        List<File> files = new LinkedList<File>();
+        files = parseFolder(files, new File(root));
+        for ( File file : files ) {
+            DownloadTask task = MetaManager.deserializeHeadInformation(file);
+            try {
+                MetaManager.deserializeSegmentsInformation(task, file);
+            } catch (ServiceException ignored) {
+                LogUtils.error(MetaManager.class, ignored);
+            }
+            if (taskId == task.getId()) {
+                result = task;
+            }
+        }
+        return result;
+    }
     private static List<File> parseFolder(List<File> result, File root) {
         File[] listFiles = root.listFiles();
         if ( null == listFiles ) {

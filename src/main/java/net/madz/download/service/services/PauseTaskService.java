@@ -20,11 +20,11 @@ import net.madz.download.service.exception.ServiceException;
 import net.madz.download.service.requests.PauseTaskRequest;
 import net.madz.download.service.responses.PauseServiceResponse;
 
-@Command(arguments = { @Arg(name = "name", description = "the file name of task.") }, commandName = "pause-task", request = PauseTaskRequest.class,
+@Command(arguments = { @Arg(name = "id", description = "the id of task.") }, commandName = "pause-task", request = PauseTaskRequest.class,
         description = "Pause a running (in prepared or started state) task.", options = {})
 public class PauseTaskService implements IService<PauseTaskRequest>, IStateChangeListener {
 
-    static ConcurrentHashMap<String, IDownloadProcess> activeProcesses = new ConcurrentHashMap<String, IDownloadProcess>();
+    static ConcurrentHashMap<Integer, IDownloadProcess> activeProcesses = new ConcurrentHashMap<Integer, IDownloadProcess>();
     private PauseTaskRequest request;
     private ITelnetClient client;
 
@@ -54,10 +54,10 @@ public class PauseTaskService implements IService<PauseTaskRequest>, IStateChang
     @Override
     public IServiceResponse processRequest(PauseTaskRequest request) throws ServiceException {
         System.out.println("Enter PauseService");
-        final IDownloadProcess proxy = activeProcesses.get(request.getName());
+        final IDownloadProcess proxy = activeProcesses.get(request.getId());
         proxy.pause();
         PauseServiceResponse response = new PauseServiceResponse();
-        response.setUrl(proxy.getUrl());
+        response.setId(proxy.getTaskId());
         return response;
     }
 
@@ -79,10 +79,10 @@ public class PauseTaskService implements IService<PauseTaskRequest>, IStateChang
         final DownloadProcess reactiveObject = (DownloadProcess) context.getReactiveObject();
         if ( nextState == StateEnum.Prepared || ( nextState == StateEnum.Started ) ) {
             System.out.println("PauseService process added");
-            activeProcesses.put(reactiveObject.getTask().getFileName(), reactiveObject.getProxy());
+            activeProcesses.put(reactiveObject.getTask().getId(), reactiveObject.getProxy());
         } else {
             System.out.println("PauseService process removed");
-            activeProcesses.remove(reactiveObject.getTask().getFileName());
+            activeProcesses.remove(reactiveObject.getTask().getId());
         }
     }
 

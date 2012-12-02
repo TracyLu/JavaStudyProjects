@@ -31,7 +31,7 @@ import net.madz.download.service.responses.ListTasksResponse;
         @Option(description = "Display all finished tasks.", fullName = "--finished", shortName = "-f") }, request = ListTasksRequest.class, arguments = {})
 public class ListTasksService implements IService<ListTasksRequest>, IStateChangeListener {
 
-    private ConcurrentHashMap<String, DownloadProcess> activeProcesses = new ConcurrentHashMap<String, DownloadProcess>();
+    private ConcurrentHashMap<Integer, DownloadProcess> activeProcesses = new ConcurrentHashMap<Integer, DownloadProcess>();
     private List<DownloadTask> tasks;
     private ITelnetClient client;
 
@@ -75,10 +75,10 @@ public class ListTasksService implements IService<ListTasksRequest>, IStateChang
     private void getRunningTasks() {
         synchronized (activeProcesses) {
             System.out.println("getRunningTasks activeProcesses size:" + activeProcesses.size());
-            Enumeration<String> keys = activeProcesses.keys();
+            Enumeration<Integer> keys = activeProcesses.keys();
             System.out.println("enter tasks size:" + tasks.size());
             while ( keys.hasMoreElements() ) {
-                String url = keys.nextElement();
+                int url = keys.nextElement();
                 System.out.println("getRunningTask url :" + url);
                 if ( activeProcesses.get(url) instanceof IDownloadProcess ) {
                     DownloadProcess process = (DownloadProcess) activeProcesses.get(url);
@@ -126,10 +126,10 @@ public class ListTasksService implements IService<ListTasksRequest>, IStateChang
         synchronized (activeProcesses) {
             if ( nextState == StateEnum.Prepared || ( nextState == StateEnum.Started ) ) {
                 System.out.println("ListTasksService prcess added");
-                activeProcesses.put(reactiveObject.getUrl(), reactiveObject);
+                activeProcesses.put(reactiveObject.getTaskId(), reactiveObject);
             } else {
                 System.out.println("ListTasksService process removed");
-                activeProcesses.remove(reactiveObject.getUrl());
+                activeProcesses.remove(reactiveObject.getTaskId());
             }
         }
         System.out.println("active processs size" + activeProcesses.size());

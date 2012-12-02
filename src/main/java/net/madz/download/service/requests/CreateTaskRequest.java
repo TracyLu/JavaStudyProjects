@@ -16,6 +16,7 @@ public final class CreateTaskRequest implements IServiceRequest {
     private String folder;
     private String filename;
     private int threadNumber = 10;
+    private boolean reCreate = false;
 
     public String getCommandName() {
         return commandName;
@@ -63,6 +64,14 @@ public final class CreateTaskRequest implements IServiceRequest {
 
     public void setThreadNumber(int threadNumber) {
         this.threadNumber = threadNumber;
+    }
+    
+    public boolean isReCreate() {
+        return reCreate;
+    }
+
+    public void setReCreate(boolean reCreate) {
+        this.reCreate = reCreate;
     }
 
     @Override

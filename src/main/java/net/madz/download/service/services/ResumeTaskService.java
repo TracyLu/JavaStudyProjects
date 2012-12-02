@@ -20,9 +20,9 @@ import net.madz.download.service.exception.ServiceException;
 import net.madz.download.service.requests.ResumeTaskRequest;
 import net.madz.download.service.responses.ResumeTaskResponse;
 
-@Command(arguments = { @Arg(name = "taskName", description="taskName is the file name of the task.") }, commandName = "resume-task", options = {}, request = ResumeTaskRequest.class,
-        description = "Resume a paused download task by specifing the task name.")
-public class ResumeTaskService implements IService<ResumeTaskRequest>,IStateChangeListener {
+@Command(arguments = { @Arg(name = "id", description = "the id of task") }, commandName = "resume-task", options = {},
+        request = ResumeTaskRequest.class, description = "Resume a paused download task by specifing the task id.")
+public class ResumeTaskService implements IService<ResumeTaskRequest>, IStateChangeListener {
 
     private DownloadProcess process;
     private IDownloadProcess iProcess;
@@ -62,18 +62,22 @@ public class ResumeTaskService implements IService<ResumeTaskRequest>,IStateChan
 
     @Override
     public void onStateChanged(StateContext<?, ?> context) {
+        System.out.println("Enter Resume Task Service on state change.");
+        System.out.println("ResumeTaskService total length:" + this.process.getTask().getTotalLength());
+        System.out.println("ResumeTaskService receive bytes:" + this.process.getReceiveBytes());
         final Object reactiveObject = context.getReactiveObject();
         if ( !( reactiveObject instanceof IDownloadProcess ) ) {
             return;
         }
         IDownloadProcess other = (IDownloadProcess) reactiveObject;
-        if ( !other.getUrl().equals(this.iProcess.getUrl()) ) {
+        if ( other.getTaskId() != this.iProcess.getTaskId() ) {
             return;
         }
         synchronized (process) {
             if ( context.getTransition() != TransitionEnum.Receive ) {
                 return;
             }
+            System.out.println("Resuem Task Service: Recived bytes" + process.getReceiveBytes() + " Total Length: " + process.getTask().getTotalLength());
             if ( process.getReceiveBytes() == process.getTask().getTotalLength() ) {
                 StateChangeListenerHub.INSTANCE.removeListener(this);
                 iProcess.finish();

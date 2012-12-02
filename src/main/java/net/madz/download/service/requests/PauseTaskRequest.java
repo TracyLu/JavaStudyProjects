@@ -5,7 +5,7 @@ import net.madz.download.service.exception.ServiceException;
 
 public class PauseTaskRequest implements IServiceRequest {
 
-    private String url;
+    private String id;
     private String commandName;
 
     @Override
@@ -17,12 +17,12 @@ public class PauseTaskRequest implements IServiceRequest {
     public void validate() throws ServiceException {
     }
 
-    public String getUrl() {
-        return url;
+    public int getId() {
+        return Integer.valueOf(id);
     }
 
-    public void setUrl(String url) {
-        this.url = url;
+    public void setId(String id) {
+        this.id = id;
     }
 
     public void setCommandName(String commandName) {

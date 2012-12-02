@@ -4,18 +4,18 @@ import net.madz.download.service.IServiceResponse;
 
 public class CreateTaskResponse implements IServiceResponse {
 
-    private String message;
+    private String id;
 
-    public String getMessage() {
-        return message;
+    public String getId() {
+        return id;
     }
 
-    public void setMessage(String message) {
-        this.message = message;
+    public void setId(String id) {
+        this.id = id;
     }
 
     @Override
     public String toString() {
-        return "DownloadResponse [message=" + message + "]";
+        return id;
     }
 }
