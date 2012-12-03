@@ -7,7 +7,6 @@ import net.madz.core.lifecycle.ITransition;
 import net.madz.core.lifecycle.StateContext;
 import net.madz.core.lifecycle.impl.StateChangeListenerHub;
 import net.madz.download.agent.ITelnetClient;
-import net.madz.download.agent.impl.TelnetClient;
 import net.madz.download.engine.IDownloadProcess;
 import net.madz.download.engine.IDownloadProcess.StateEnum;
 import net.madz.download.engine.IDownloadProcess.TransitionEnum;
@@ -26,6 +25,7 @@ public class PauseTaskService implements IService<PauseTaskRequest>, IStateChang
 
     static ConcurrentHashMap<Integer, IDownloadProcess> activeProcesses = new ConcurrentHashMap<Integer, IDownloadProcess>();
     private PauseTaskRequest request;
+    @SuppressWarnings("unused")
     private ITelnetClient client;
 
     @Override

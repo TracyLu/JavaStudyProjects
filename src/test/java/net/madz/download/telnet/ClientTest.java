@@ -79,6 +79,7 @@ public class ClientTest {
         taskCounts--;
     }
 
+    @SuppressWarnings("unused")
     private volatile int taskCounts;
 
     public static void main(String[] args) {

@@ -1,7 +1,6 @@
 package net.madz.download.engine.impl;
 
 import java.util.ArrayList;
-import java.util.List;
 
 import net.madz.download.engine.DownloadTask;
 import net.madz.download.engine.IDownloadEngine;

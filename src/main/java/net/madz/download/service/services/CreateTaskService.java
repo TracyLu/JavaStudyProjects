@@ -9,7 +9,6 @@ import net.madz.core.lifecycle.StateContext;
 import net.madz.core.lifecycle.impl.StateChangeListenerHub;
 import net.madz.core.lifecycle.impl.TransitionInvocationHandler;
 import net.madz.download.agent.ITelnetClient;
-import net.madz.download.agent.impl.TelnetClient;
 import net.madz.download.engine.DownloadTask;
 import net.madz.download.engine.IDownloadProcess;
 import net.madz.download.engine.IDownloadProcess.StateEnum;
@@ -66,10 +65,9 @@ public class CreateTaskService implements IService<CreateTaskRequest>, IStateCha
                 request.setFilename(newName);
             } else {
                 String output = "The task is finished. Do you want to reload the task? (Y:N): ";
-                TelnetClient realClient = (TelnetClient) client;
-                String response = realClient.acquireConfirm(output);
+                String response = client.acquireConfirm(output);
                 while ( null == response || 0 >= response.length() ) {
-                    response = realClient.acquireConfirm(output);
+                    response = client.acquireConfirm(output);
                 }
                 if ( "Y".equalsIgnoreCase(response) ) {
                     // Change the filename if equals to the older one.
@@ -117,14 +115,13 @@ public class CreateTaskService implements IService<CreateTaskRequest>, IStateCha
             } else if ( results.length == 2 ) {
                 newName = results[0].concat(".").concat("1").concat(".").concat(results[1]);
             } else if ( results.length == 3 ) {
+                // if the results[length - 2] is not a number, then add .1 
+                // else results[length - 2] ++
+                // TODO
                 int number = Integer.valueOf(results[1]).intValue();
                 int newNumber = number + 1;
                 newName = results[0].concat(".").concat(newNumber + "").concat(".").concat(results[2]);
-            } else {
-                int length = results.length;
-                // TODO
-                //
-            }
+            } 
             newName = generateNewName(folderName, newName, tasks);
         } else {
             newName = oldName;

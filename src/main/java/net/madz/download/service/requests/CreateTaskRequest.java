@@ -5,8 +5,8 @@ import java.net.MalformedURLException;
 import java.net.URL;
 
 import net.madz.download.service.IServiceRequest;
-import net.madz.download.service.exception.ServiceException;
 import net.madz.download.service.exception.ExceptionMessage;
+import net.madz.download.service.exception.ServiceException;
 
 public final class CreateTaskRequest implements IServiceRequest {
 

@@ -9,8 +9,8 @@ import net.madz.download.service.ServiceHub;
 import net.madz.download.service.annotations.Arg;
 import net.madz.download.service.annotations.Command;
 import net.madz.download.service.annotations.Option;
-import net.madz.download.service.exception.ServiceException;
 import net.madz.download.service.exception.ExceptionMessage;
+import net.madz.download.service.exception.ServiceException;
 import net.madz.download.service.requests.HelpRequest;
 import net.madz.download.service.services.HelpService;
 

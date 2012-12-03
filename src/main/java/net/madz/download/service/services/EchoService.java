@@ -14,6 +14,7 @@ import net.madz.download.service.responses.EchoResponse;
         fullName = "--lowerCase", description = "Echo message in lower case.") }, description = "Echo service will echo message.")
 public class EchoService implements IService<IServiceRequest> {
 
+    @SuppressWarnings("unused")
     private ITelnetClient client;
 
     @Override

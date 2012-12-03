@@ -2,13 +2,11 @@ package net.madz.download.service.services;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
 
 import net.madz.download.agent.ITelnetClient;
 import net.madz.download.engine.DownloadTask;
 import net.madz.download.engine.IDownloadProcess;
 import net.madz.download.engine.impl.DownloadEngine;
-import net.madz.download.engine.impl.DownloadProcess;
 import net.madz.download.service.IService;
 import net.madz.download.service.IServiceResponse;
 import net.madz.download.service.annotations.Command;
@@ -23,6 +21,7 @@ import net.madz.download.service.responses.ListTasksResponse;
         @Option(description = "Display all finished tasks.", fullName = "--finished", shortName = "-f") }, request = ListTasksRequest.class, arguments = {})
 public class ListTasksService implements IService<ListTasksRequest> {
 
+    @SuppressWarnings("unused")
     private ITelnetClient client;
 
     @Override

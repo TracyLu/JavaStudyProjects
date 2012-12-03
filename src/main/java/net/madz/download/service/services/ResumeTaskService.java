@@ -15,7 +15,6 @@ import net.madz.download.service.IService;
 import net.madz.download.service.IServiceResponse;
 import net.madz.download.service.annotations.Arg;
 import net.madz.download.service.annotations.Command;
-import net.madz.download.service.annotations.Option;
 import net.madz.download.service.exception.ServiceException;
 import net.madz.download.service.requests.ResumeTaskRequest;
 import net.madz.download.service.responses.ResumeTaskResponse;
@@ -26,6 +25,7 @@ public class ResumeTaskService implements IService<ResumeTaskRequest>, IStateCha
 
     private DownloadProcess process;
     private IDownloadProcess iProcess;
+    @SuppressWarnings("unused")
     private ITelnetClient client;
 
     @Override

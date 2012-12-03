@@ -8,9 +8,9 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 
 import net.madz.download.LogUtils;
+import net.madz.download.engine.DownloadSegment;
 import net.madz.download.engine.DownloadTask;
 import net.madz.download.engine.IDownloadProcess;
-import net.madz.download.engine.DownloadSegment;
 import net.madz.download.engine.impl.metadata.MetaManager;
 
 public final class DownloadSegmentWorker implements Runnable {

@@ -2,8 +2,6 @@ package net.madz.download;
 
 import java.io.File;
 
-import net.madz.download.engine.impl.metadata.MetaManager;
-
 
 public abstract class FileUtils {
 
