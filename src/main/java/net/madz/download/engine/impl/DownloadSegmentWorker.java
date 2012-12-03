@@ -1,4 +1,4 @@
-package net.madz.download.engine;
+package net.madz.download.engine.impl;
 
 import java.io.File;
 import java.io.IOException;
@@ -8,9 +8,10 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 
 import net.madz.download.LogUtils;
-import net.madz.download.service.metadata.DownloadTask;
-import net.madz.download.service.metadata.MetaManager;
-import net.madz.download.service.metadata.Segment;
+import net.madz.download.engine.IDownloadProcess;
+import net.madz.download.engine.impl.metadata.DownloadTask;
+import net.madz.download.engine.impl.metadata.MetaManager;
+import net.madz.download.engine.impl.metadata.Segment;
 
 public final class DownloadSegmentWorker implements Runnable {
 

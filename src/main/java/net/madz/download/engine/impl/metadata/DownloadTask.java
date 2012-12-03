@@ -1,4 +1,4 @@
-package net.madz.download.service.metadata;
+package net.madz.download.engine.impl.metadata;
 
 import java.io.File;
 import java.io.Serializable;

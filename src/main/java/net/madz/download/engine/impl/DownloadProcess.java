@@ -1,4 +1,4 @@
-package net.madz.download.engine;
+package net.madz.download.engine.impl;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -9,10 +9,12 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import net.madz.download.LogUtils;
+import net.madz.download.engine.IDownloadProcess;
+import net.madz.download.engine.IDownloadProcess.StateEnum;
+import net.madz.download.engine.impl.metadata.DownloadTask;
+import net.madz.download.engine.impl.metadata.MetaManager;
+import net.madz.download.engine.impl.metadata.Segment;
 import net.madz.download.service.exception.ServiceException;
-import net.madz.download.service.metadata.DownloadTask;
-import net.madz.download.service.metadata.MetaManager;
-import net.madz.download.service.metadata.Segment;
 import net.madz.download.service.requests.CreateTaskRequest;
 import net.madz.download.service.requests.ResumeTaskRequest;
 

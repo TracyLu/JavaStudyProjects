@@ -11,7 +11,7 @@ import java.io.PrintWriter;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 
-import net.madz.download.service.metadata.MetaManager;
+import net.madz.download.engine.impl.metadata.MetaManager;
 
 import org.junit.Test;
 

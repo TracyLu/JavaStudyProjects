@@ -9,10 +9,10 @@ import java.net.URL;
 
 import junit.framework.Assert;
 
+import net.madz.download.engine.impl.metadata.DownloadTask;
+import net.madz.download.engine.impl.metadata.MetaManager;
+import net.madz.download.engine.impl.metadata.Segment;
 import net.madz.download.service.exception.ServiceException;
-import net.madz.download.service.metadata.DownloadTask;
-import net.madz.download.service.metadata.MetaManager;
-import net.madz.download.service.metadata.Segment;
 
 import org.junit.Test;
 

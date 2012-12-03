@@ -2,8 +2,8 @@ package net.madz.download;
 
 import net.madz.download.connector.IServiceEndpoint;
 import net.madz.download.connector.impl.ServiceEndpoint;
+import net.madz.download.engine.impl.metadata.MetaManager;
 import net.madz.download.service.ServiceHub;
-import net.madz.download.service.metadata.MetaManager;
 
 public class Main {
 

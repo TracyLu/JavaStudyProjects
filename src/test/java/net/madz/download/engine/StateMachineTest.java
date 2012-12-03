@@ -12,6 +12,7 @@ import net.madz.core.verification.VerificationFailureSet;
 import net.madz.download.LogUtils;
 import net.madz.download.engine.IDownloadProcess.StateEnum;
 import net.madz.download.engine.IDownloadProcess.TransitionEnum;
+import net.madz.download.engine.impl.DownloadProcess;
 import net.madz.download.service.requests.CreateTaskRequest;
 import net.madz.download.service.services.CreateTaskService;
 

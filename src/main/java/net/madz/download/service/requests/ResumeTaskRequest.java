@@ -2,11 +2,11 @@ package net.madz.download.service.requests;
 
 import java.util.List;
 
+import net.madz.download.engine.impl.metadata.DownloadTask;
+import net.madz.download.engine.impl.metadata.MetaManager;
 import net.madz.download.service.IServiceRequest;
 import net.madz.download.service.exception.ExceptionMessage;
 import net.madz.download.service.exception.ServiceException;
-import net.madz.download.service.metadata.DownloadTask;
-import net.madz.download.service.metadata.MetaManager;
 
 public class ResumeTaskRequest implements IServiceRequest {
 
