@@ -1,4 +1,4 @@
-package net.madz.download.service;
+package net.madz.download.engine.impl.metadata;
 
 import static org.junit.Assert.fail;
 
@@ -9,9 +9,9 @@ import java.net.URL;
 
 import junit.framework.Assert;
 
-import net.madz.download.engine.impl.metadata.DownloadTask;
+import net.madz.download.engine.DownloadTask;
+import net.madz.download.engine.DownloadSegment;
 import net.madz.download.engine.impl.metadata.MetaManager;
-import net.madz.download.engine.impl.metadata.Segment;
 import net.madz.download.service.exception.ServiceException;
 
 import org.junit.Test;
@@ -72,7 +72,7 @@ public class MetaManagerTest {
         } catch (ServiceException e) {
             fail("Error occurred.");
         }
-        for ( Segment segment : task.getSegments() ) {
+        for ( DownloadSegment segment : task.getSegments() ) {
             System.out.println(segment.toString());
         }
     }

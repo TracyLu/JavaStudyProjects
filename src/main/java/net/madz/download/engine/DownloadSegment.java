@@ -1,8 +1,8 @@
-package net.madz.download.engine.impl.metadata;
+package net.madz.download.engine;
 
 import java.io.Serializable;
 
-public class Segment implements Serializable {
+public class DownloadSegment implements Serializable {
     
     private static final long serialVersionUID = -5065005410835889264L;
 

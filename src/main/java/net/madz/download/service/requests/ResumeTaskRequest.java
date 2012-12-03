@@ -2,7 +2,7 @@ package net.madz.download.service.requests;
 
 import java.util.List;
 
-import net.madz.download.engine.impl.metadata.DownloadTask;
+import net.madz.download.engine.DownloadTask;
 import net.madz.download.engine.impl.metadata.MetaManager;
 import net.madz.download.service.IServiceRequest;
 import net.madz.download.service.exception.ExceptionMessage;
@@ -32,15 +32,6 @@ public class ResumeTaskRequest implements IServiceRequest {
 
     @Override
     public void validate() throws ServiceException {
-        List<DownloadTask> tasks = MetaManager.load("./meta/paused");
-        boolean matched = false;
-        for ( DownloadTask task : tasks ) {
-            if ( this.getId() == task.getId() ) {
-                matched = true;
-            }
-        }
-        if ( !matched ) {
-            throw new ServiceException(ExceptionMessage.TASK_NOT_FOUND);
-        }
     }
+
 }

@@ -16,6 +16,8 @@ import java.util.LinkedList;
 import java.util.List;
 
 import net.madz.download.LogUtils;
+import net.madz.download.engine.DownloadTask;
+import net.madz.download.engine.DownloadSegment;
 import net.madz.download.engine.IDownloadProcess.StateEnum;
 import net.madz.download.service.exception.ServiceException;
 import net.madz.download.service.exception.ExceptionMessage;
@@ -265,7 +267,7 @@ public class MetaManager {
             raf = new RandomAccessFile(logFile, "rw");
             long position = 0;
             for ( int i = 0; i < segments; i++ ) {
-                Segment item = new Segment();
+                DownloadSegment item = new DownloadSegment();
                 // Segment Id
                 //
                 position = Consts.FIRST_SEGMENT_POSITION + i * Consts.SEGMENT_LENGTH;
@@ -386,7 +388,7 @@ public class MetaManager {
         RandomAccessFile raf = null;
         try {
             raf = new RandomAccessFile(metadataFile, "rw");
-            for ( Segment segment : task.getSegments() ) {
+            for ( DownloadSegment segment : task.getSegments() ) {
                 int seq = segment.getId();
                 long position = Consts.FIRST_SEGMENT_POSITION + seq * Consts.SEGMENT_LENGTH;
                 raf.seek(position);
@@ -421,7 +423,7 @@ public class MetaManager {
         long totalLength = task.getTotalLength();
         partLength = totalLength / segmentsNumber;
         for ( int i = 0; i < segmentsNumber; i++ ) {
-            Segment segment = new Segment();
+            DownloadSegment segment = new DownloadSegment();
             segment.setId(i);
             final int seq = i;
             final long finalPartLength = partLength;
@@ -620,7 +622,7 @@ public class MetaManager {
 
     public static void updateSegmentState(File metadataFile, DownloadTask task, StateEnum state) throws FileNotFoundException, IOException {
         RandomAccessFile raf = null;
-        List<Segment> segments = task.getSegments();
+        List<DownloadSegment> segments = task.getSegments();
         try {
             raf = new RandomAccessFile(metadataFile, "rw");
             for ( int i = 0; i < task.getSegmentsNumber(); i++ ) {

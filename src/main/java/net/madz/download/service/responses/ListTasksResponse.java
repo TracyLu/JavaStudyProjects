@@ -2,7 +2,7 @@ package net.madz.download.service.responses;
 
 import java.util.List;
 
-import net.madz.download.engine.impl.metadata.DownloadTask;
+import net.madz.download.engine.DownloadTask;
 import net.madz.download.service.IServiceResponse;
 
 public class ListTasksResponse implements IServiceResponse {

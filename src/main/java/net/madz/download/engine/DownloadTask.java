@@ -1,4 +1,4 @@
-package net.madz.download.engine.impl.metadata;
+package net.madz.download.engine;
 
 import java.io.File;
 import java.io.Serializable;
@@ -6,6 +6,7 @@ import java.net.URL;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+
 
 public final class DownloadTask implements Serializable {
 
@@ -20,7 +21,7 @@ public final class DownloadTask implements Serializable {
     private boolean resumable;
     private byte threadNumber;
     private byte state;
-    private List<Segment> segments = new LinkedList<Segment>();
+    private List<DownloadSegment> segments = new LinkedList<DownloadSegment>();
 
     public int getId() {
         return id;
@@ -71,7 +72,7 @@ public final class DownloadTask implements Serializable {
     public long getReceivedBytes() {
         long receivedBytes = 0;
         for ( int i = 0; i < this.segmentsNumber; i++ ) {
-            Segment segment = this.segments.get(i);
+            DownloadSegment segment = this.segments.get(i);
             long startBytes = segment.getStartBytes();
             long currentBytes = segment.getCurrentBytes();
             receivedBytes += currentBytes - startBytes + 1;
@@ -111,11 +112,11 @@ public final class DownloadTask implements Serializable {
         this.state = state;
     }
 
-    public List<Segment> getSegments() {
+    public List<DownloadSegment> getSegments() {
         return Collections.unmodifiableList(segments);
     }
 
-    public void addSegment(Segment segment) {
+    public void addSegment(DownloadSegment segment) {
         this.segments.add(segment);
     }
 
@@ -124,7 +125,7 @@ public final class DownloadTask implements Serializable {
         StringBuilder segmentsInformation = new StringBuilder();
         if ( null != segments ) {
             segmentsInformation.append("(");
-            for ( Segment segment : segments ) {
+            for ( DownloadSegment segment : segments ) {
                 segmentsInformation.append("id=" + segment.getId());
                 segmentsInformation.append(",start bytes=" + segment.getStartBytes());
                 segmentsInformation.append(",end bytes=" + segment.getEndBytes());

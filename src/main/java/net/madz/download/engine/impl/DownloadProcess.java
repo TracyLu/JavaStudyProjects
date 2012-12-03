@@ -9,11 +9,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import net.madz.download.LogUtils;
+import net.madz.download.engine.DownloadTask;
 import net.madz.download.engine.IDownloadProcess;
+import net.madz.download.engine.DownloadSegment;
 import net.madz.download.engine.IDownloadProcess.StateEnum;
-import net.madz.download.engine.impl.metadata.DownloadTask;
 import net.madz.download.engine.impl.metadata.MetaManager;
-import net.madz.download.engine.impl.metadata.Segment;
 import net.madz.download.service.exception.ServiceException;
 import net.madz.download.service.requests.CreateTaskRequest;
 import net.madz.download.service.requests.ResumeTaskRequest;
@@ -77,9 +77,9 @@ public class DownloadProcess implements IDownloadProcess {
     @Override
     public void start() {
         metadataFile = MetaManager.move(metadataFile, new File("./meta/started"));
-        final List<Segment> segments = task.getSegments();
+        final List<DownloadSegment> segments = task.getSegments();
         localThreadPool = Executors.newFixedThreadPool(task.getThreadNumber());
-        for ( final Segment segment : segments ) {
+        for ( final DownloadSegment segment : segments ) {
             if ( pauseFlag ) {
                 break;
             }

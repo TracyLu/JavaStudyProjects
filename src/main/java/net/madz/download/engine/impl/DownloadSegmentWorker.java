@@ -8,20 +8,20 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 
 import net.madz.download.LogUtils;
+import net.madz.download.engine.DownloadTask;
 import net.madz.download.engine.IDownloadProcess;
-import net.madz.download.engine.impl.metadata.DownloadTask;
+import net.madz.download.engine.DownloadSegment;
 import net.madz.download.engine.impl.metadata.MetaManager;
-import net.madz.download.engine.impl.metadata.Segment;
 
 public final class DownloadSegmentWorker implements Runnable {
 
     private final DownloadTask task;
-    private final Segment segment;
+    private final DownloadSegment segment;
     private IDownloadProcess process;
     private File dataFile;
     private File metadataFile;
 
-    public DownloadSegmentWorker(IDownloadProcess process, DownloadTask task, Segment segment, File dataFile, File metadataFile) {
+    public DownloadSegmentWorker(IDownloadProcess process, DownloadTask task, DownloadSegment segment, File dataFile, File metadataFile) {
         this.process = process;
         this.task = task;
         this.segment = segment;
