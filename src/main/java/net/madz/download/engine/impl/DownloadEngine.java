@@ -5,6 +5,7 @@ import java.util.List;
 
 import net.madz.download.engine.DownloadTask;
 import net.madz.download.engine.IDownloadEngine;
+import net.madz.download.engine.IDownloadProcess;
 import net.madz.download.engine.impl.metadata.MetaManager;
 
 public class DownloadEngine implements IDownloadEngine {
@@ -34,7 +35,7 @@ public class DownloadEngine implements IDownloadEngine {
 
     @Override
     public DownloadTask findById(int id) {
-        final List<DownloadTask> tasks = MetaManager.load("./meta");
+        final DownloadTask[] tasks = listAllTasks();
         for ( DownloadTask task : tasks ) {
             if ( id == task.getId() ) {
                 return task;
@@ -49,9 +50,24 @@ public class DownloadEngine implements IDownloadEngine {
             return new DownloadTask[0];
         }
         final ArrayList<DownloadTask> result = new ArrayList<DownloadTask>();
-        final List<DownloadTask> tasks = MetaManager.load("./meta");
+        final DownloadTask[] tasks = listAllTasks();
         for ( DownloadTask task : tasks ) {
             if ( url.equalsIgnoreCase(task.getUrl().toString()) ) {
+                result.add(task);
+            }
+        }
+        return result.toArray(new DownloadTask[result.size()]);
+    }
+
+    public DownloadTask[] listAllTasks() {
+        return MetaManager.load("./meta");
+    }
+
+    public DownloadTask[] findByState(IDownloadProcess.StateEnum state) {
+        final ArrayList<DownloadTask> result = new ArrayList<DownloadTask>();
+        final DownloadTask[] tasks = listAllTasks();
+        for ( DownloadTask task : tasks ) {
+            if ( state.ordinal() == task.getState() ) {
                 result.add(task);
             }
         }

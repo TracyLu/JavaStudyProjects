@@ -1,6 +1,7 @@
 package net.madz.download.service.services;
 
 import java.lang.reflect.Proxy;
+import java.util.Arrays;
 import java.util.List;
 
 import net.madz.core.lifecycle.IStateChangeListener;
@@ -13,8 +14,8 @@ import net.madz.download.engine.DownloadTask;
 import net.madz.download.engine.IDownloadProcess;
 import net.madz.download.engine.IDownloadProcess.StateEnum;
 import net.madz.download.engine.IDownloadProcess.TransitionEnum;
+import net.madz.download.engine.impl.DownloadEngine;
 import net.madz.download.engine.impl.DownloadProcess;
-import net.madz.download.engine.impl.metadata.MetaManager;
 import net.madz.download.service.IService;
 import net.madz.download.service.IServiceResponse;
 import net.madz.download.service.annotations.Arg;
@@ -95,8 +96,7 @@ public class CreateTaskService implements IService<CreateTaskRequest>, IStateCha
 
     private String getNewFileName(String folderName, String filename) {
         String newName = null;
-        List<DownloadTask> tasks = MetaManager.load("./meta");
-        newName = generateNewName(folderName, filename, tasks);
+        newName = generateNewName(folderName, filename, Arrays.asList(DownloadEngine.getInstance().listAllTasks()));
         return newName;
     }
 
@@ -133,17 +133,8 @@ public class CreateTaskService implements IService<CreateTaskRequest>, IStateCha
     }
 
     private boolean checkWhetherDownloaded(CreateTaskRequest request) {
-        boolean result = false;
-        List<DownloadTask> tasks = MetaManager.load("./meta");
-        for ( DownloadTask task : tasks ) {
-            if ( null == task || null == task.getUrl() ) {
-                continue;
-            }
-            if ( request.getUrl().equalsIgnoreCase(task.getUrl().toString()) ) {
-                result = true;
-            }
-        }
-        return result;
+        final DownloadTask[] tasks = DownloadEngine.getInstance().findByUrl(request.getUrl());
+        return tasks.length > 0;
     }
 
     @Override

@@ -15,6 +15,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 
+import net.madz.download.FileUtils;
 import net.madz.download.LogUtils;
 import net.madz.download.engine.DownloadTask;
 import net.madz.download.engine.DownloadSegment;
@@ -483,31 +484,8 @@ public class MetaManager {
 
     public static File move(File srcFile, File objFolderFile) {
         File targetFile = copy(srcFile, objFolderFile);
-        delete(srcFile);
+        FileUtils.delete(srcFile);
         return targetFile;
-    }
-
-    public static void delete(File file) {
-        if ( !file.exists() ) return;
-        if ( file.isFile() ) {
-            int count = 0;
-            while ( !file.delete() ) {
-                count++;
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException ignored) {
-                    LogUtils.error(MetaManager.class, ignored);
-                }
-                if ( count > 10 ) {
-                    break;
-                }
-            }
-        } else {
-            for ( File f : file.listFiles() ) {
-                delete(f);
-            }
-            file.delete();
-        }
     }
 
     public static void updateTaskState(File metadataFile, StateEnum state) throws FileNotFoundException, IOException {
@@ -572,7 +550,7 @@ public class MetaManager {
         }
     }
 
-    public synchronized static List<DownloadTask> load(String root) {
+    public synchronized static DownloadTask[] load(String root) {
         List<DownloadTask> results = new LinkedList<DownloadTask>();
         List<File> files = new LinkedList<File>();
         files = parseFolder(files, new File(root));
@@ -586,8 +564,9 @@ public class MetaManager {
             task.toString();
             results.add(task);
         }
-        return results;
+        return results.toArray(new DownloadTask[results.size()]);
     }
+
     public synchronized static DownloadTask load(String root, int taskId) {
         DownloadTask result = null;
         List<File> files = new LinkedList<File>();
@@ -599,12 +578,13 @@ public class MetaManager {
             } catch (ServiceException ignored) {
                 LogUtils.error(MetaManager.class, ignored);
             }
-            if (taskId == task.getId()) {
+            if ( taskId == task.getId() ) {
                 result = task;
             }
         }
         return result;
     }
+
     private static List<File> parseFolder(List<File> result, File root) {
         File[] listFiles = root.listFiles();
         if ( null == listFiles ) {
