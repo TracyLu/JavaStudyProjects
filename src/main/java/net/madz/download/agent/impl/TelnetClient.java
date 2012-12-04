@@ -7,8 +7,6 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.Socket;
 
-import net.madz.download.LogUtils;
-import net.madz.download.MessageConsts;
 import net.madz.download.agent.ITelnetClient;
 import net.madz.download.agent.protocol.impl.RequestDeserializer;
 import net.madz.download.agent.protocol.impl.ResponseSerializer;
@@ -19,6 +17,8 @@ import net.madz.download.service.ServiceHub;
 import net.madz.download.service.exception.ExceptionMessage;
 import net.madz.download.service.exception.ServiceException;
 import net.madz.download.service.requests.HelpRequest;
+import net.madz.download.utils.LogUtils;
+import net.madz.download.utils.MessageConsts;
 
 public class TelnetClient<R extends IServiceRequest, S extends IService<R>> implements ITelnetClient {
 

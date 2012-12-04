@@ -2,7 +2,6 @@ package net.madz.download.agent.protocol.impl;
 
 import java.lang.reflect.Method;
 
-import net.madz.download.LogUtils;
 import net.madz.download.service.IService;
 import net.madz.download.service.IServiceRequest;
 import net.madz.download.service.ServiceHub;
@@ -13,6 +12,7 @@ import net.madz.download.service.exception.ExceptionMessage;
 import net.madz.download.service.exception.ServiceException;
 import net.madz.download.service.requests.HelpRequest;
 import net.madz.download.service.services.HelpService;
+import net.madz.download.utils.LogUtils;
 
 public class RequestDeserializer {
 

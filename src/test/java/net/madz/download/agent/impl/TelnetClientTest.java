@@ -10,11 +10,11 @@ import java.net.Socket;
 import junit.framework.Assert;
 import mockit.Mocked;
 import mockit.NonStrictExpectations;
-import net.madz.download.MessageConsts;
 import net.madz.download.agent.ITelnetClient;
 import net.madz.download.agent.protocol.impl.RequestDeserializer;
 import net.madz.download.agent.protocol.impl.ResponseSerializer;
 import net.madz.download.service.IService;
+import net.madz.download.utils.MessageConsts;
 
 import org.junit.Test;
 

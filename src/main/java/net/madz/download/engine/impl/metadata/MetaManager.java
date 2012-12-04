@@ -15,14 +15,14 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 
-import net.madz.download.FileUtils;
-import net.madz.download.LogUtils;
 import net.madz.download.engine.DownloadSegment;
 import net.madz.download.engine.DownloadTask;
 import net.madz.download.engine.IDownloadProcess.StateEnum;
 import net.madz.download.service.exception.ExceptionMessage;
 import net.madz.download.service.exception.ServiceException;
 import net.madz.download.service.requests.CreateTaskRequest;
+import net.madz.download.utils.FileUtils;
+import net.madz.download.utils.LogUtils;
 
 public class MetaManager {
 

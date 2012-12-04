@@ -8,13 +8,13 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import net.madz.download.LogUtils;
 import net.madz.download.engine.DownloadSegment;
 import net.madz.download.engine.DownloadTask;
 import net.madz.download.engine.IDownloadProcess;
 import net.madz.download.engine.impl.metadata.MetaManager;
 import net.madz.download.service.requests.CreateTaskRequest;
 import net.madz.download.service.requests.ResumeTaskRequest;
+import net.madz.download.utils.LogUtils;
 
 public class DownloadProcess implements IDownloadProcess {
 

@@ -1,4 +1,4 @@
-package net.madz.download;
+package net.madz.download.utils;
 
 public class MessageConsts {
 

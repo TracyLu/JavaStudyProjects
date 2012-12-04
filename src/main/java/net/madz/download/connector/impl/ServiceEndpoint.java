@@ -4,11 +4,11 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 
-import net.madz.download.LogUtils;
-import net.madz.download.MessageConsts;
 import net.madz.download.agent.ITelnetClient;
 import net.madz.download.agent.impl.TelnetClient;
 import net.madz.download.connector.IServiceEndpoint;
+import net.madz.download.utils.LogUtils;
+import net.madz.download.utils.MessageConsts;
 
 public class ServiceEndpoint implements IServiceEndpoint {
 

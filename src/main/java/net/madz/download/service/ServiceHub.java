@@ -2,7 +2,6 @@ package net.madz.download.service;
 
 import java.util.HashMap;
 
-import net.madz.download.LogUtils;
 import net.madz.download.service.annotations.Command;
 import net.madz.download.service.annotations.Services;
 import net.madz.download.service.services.CreateTaskService;
@@ -12,6 +11,7 @@ import net.madz.download.service.services.ListTasksService;
 import net.madz.download.service.services.PauseTaskService;
 import net.madz.download.service.services.QuitService;
 import net.madz.download.service.services.ResumeTaskService;
+import net.madz.download.utils.LogUtils;
 
 @Services({ EchoService.class, HelpService.class, CreateTaskService.class, PauseTaskService.class, ListTasksService.class, ResumeTaskService.class, QuitService.class })
 public class ServiceHub {

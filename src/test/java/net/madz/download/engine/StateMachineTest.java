@@ -9,12 +9,12 @@ import net.madz.core.lifecycle.impl.TransitionInvocationHandler;
 import net.madz.core.lifecycle.meta.StateMachineMetaData;
 import net.madz.core.lifecycle.meta.impl.StateMachineMetaDataBuilderImpl;
 import net.madz.core.verification.VerificationFailureSet;
-import net.madz.download.LogUtils;
 import net.madz.download.engine.IDownloadProcess.StateEnum;
 import net.madz.download.engine.IDownloadProcess.TransitionEnum;
 import net.madz.download.engine.impl.DownloadProcess;
 import net.madz.download.service.requests.CreateTaskRequest;
 import net.madz.download.service.services.CreateTaskService;
+import net.madz.download.utils.LogUtils;
 
 import org.junit.Test;
 
