@@ -1,5 +1,6 @@
 package net.madz.download.engine.impl;
 
+import java.io.File;
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.Map.Entry;
@@ -23,6 +24,7 @@ import net.madz.download.service.requests.ResumeTaskRequest;
 
 public class DownloadEngine implements IDownloadEngine, IStateChangeListener {
 
+    private static final String META_SUFFIX = ".meta";
     private boolean started;
     private static DownloadEngine instance = new DownloadEngine();
     private ConcurrentHashMap<Integer, IDownloadProcess> activeProcesses = new ConcurrentHashMap<Integer, IDownloadProcess>();
@@ -160,10 +162,16 @@ public class DownloadEngine implements IDownloadEngine, IStateChangeListener {
     }
 
     public IDownloadProcess createDownloadProcess(ResumeTaskRequest request) {
-        return createProxy(new DownloadProcess(request));
+        final DownloadTask task = MetaManager.load("./meta/paused", request.getId());
+        final File metadataFile = new File("./meta/paused/" + task.getFileName() + META_SUFFIX);
+        return createProxy(new DownloadProcess(task, metadataFile));
     }
 
     public IDownloadProcess createDownloadProcess(CreateTaskRequest request) {
-        return createProxy(new DownloadProcess(request));
+        
+        final DownloadTask task = MetaManager.createDownloadTask(request);
+        final File metadataFile = new File("./meta/new/" + request.getFilename() + META_SUFFIX);
+        MetaManager.serializeForNewState(task, metadataFile);
+        return createProxy(new DownloadProcess(task, metadataFile));
     }
 }
