@@ -6,3 +6,5 @@
 meta/paused/.DS_Store
 
 .classpath
+
+*.zip_log
