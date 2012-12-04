@@ -14,9 +14,14 @@ public class ServiceEndpoint implements IServiceEndpoint {
 
     private boolean started = false;
     private Thread workingThread = null;
+    private static ServiceEndpoint endpoint = new ServiceEndpoint();
 
-    public ServiceEndpoint() {
+    private ServiceEndpoint() {
         super();
+    }
+
+    public static ServiceEndpoint getInstance() {
+        return endpoint;
     }
 
     @Override
