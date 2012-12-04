@@ -14,6 +14,7 @@ import net.madz.download.service.responses.QuitServiceResponse;
 public class QuitService implements IService<QuitServiceRequest> {
 
     boolean started;
+    @SuppressWarnings("unused")
     private ITelnetClient client;
 
     @Override

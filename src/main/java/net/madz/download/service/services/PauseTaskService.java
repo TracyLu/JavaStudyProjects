@@ -1,17 +1,7 @@
 package net.madz.download.service.services;
 
-import java.util.concurrent.ConcurrentHashMap;
-
-import net.madz.core.lifecycle.IStateChangeListener;
-import net.madz.core.lifecycle.ITransition;
-import net.madz.core.lifecycle.StateContext;
-import net.madz.core.lifecycle.impl.StateChangeListenerHub;
 import net.madz.download.agent.ITelnetClient;
-import net.madz.download.engine.IDownloadProcess;
-import net.madz.download.engine.IDownloadProcess.StateEnum;
-import net.madz.download.engine.IDownloadProcess.TransitionEnum;
 import net.madz.download.engine.impl.DownloadEngine;
-import net.madz.download.engine.impl.DownloadProcess;
 import net.madz.download.service.IService;
 import net.madz.download.service.IServiceResponse;
 import net.madz.download.service.annotations.Arg;

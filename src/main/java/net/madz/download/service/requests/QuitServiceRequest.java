@@ -1,9 +1,6 @@
 package net.madz.download.service.requests;
 
 import net.madz.download.service.IServiceRequest;
-import net.madz.download.service.annotations.Arg;
-import net.madz.download.service.annotations.Command;
-import net.madz.download.service.annotations.Option;
 import net.madz.download.service.exception.ServiceException;
 
 public class QuitServiceRequest implements IServiceRequest {
