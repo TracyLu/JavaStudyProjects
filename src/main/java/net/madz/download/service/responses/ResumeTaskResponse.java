@@ -4,14 +4,15 @@ import net.madz.download.service.IServiceResponse;
 
 public class ResumeTaskResponse implements IServiceResponse {
 
-    private String message;
+    private final String message;
+
+    public ResumeTaskResponse(String message) {
+        super();
+        this.message = message;
+    }
 
     public String getMessage() {
         return message;
-    }
-
-    public void setMessage(String message) {
-        this.message = message;
     }
 
     @Override

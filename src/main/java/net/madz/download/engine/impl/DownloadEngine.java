@@ -1,5 +1,6 @@
 package net.madz.download.engine.impl;
 
+import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -9,12 +10,16 @@ import net.madz.core.lifecycle.IStateChangeListener;
 import net.madz.core.lifecycle.ITransition;
 import net.madz.core.lifecycle.StateContext;
 import net.madz.core.lifecycle.impl.StateChangeListenerHub;
+import net.madz.core.lifecycle.impl.TransitionInvocationHandler;
+import net.madz.download.engine.DownloadSegment;
 import net.madz.download.engine.DownloadTask;
 import net.madz.download.engine.IDownloadEngine;
 import net.madz.download.engine.IDownloadProcess;
 import net.madz.download.engine.IDownloadProcess.StateEnum;
 import net.madz.download.engine.IDownloadProcess.TransitionEnum;
 import net.madz.download.engine.impl.metadata.MetaManager;
+import net.madz.download.service.requests.CreateTaskRequest;
+import net.madz.download.service.requests.ResumeTaskRequest;
 
 public class DownloadEngine implements IDownloadEngine, IStateChangeListener {
 
@@ -35,11 +40,15 @@ public class DownloadEngine implements IDownloadEngine, IStateChangeListener {
 
     @Override
     public synchronized void start() {
-        if ( !isStarted() ) {
-            MetaManager.initiateMetadataDirs();
-            StateChangeListenerHub.INSTANCE.registerListener(this);
-            started = true;
+        if ( isStarted() ) {
+            return;
         }
+        MetaManager.initiateMetadataDirs();
+        // fix corrupted state from active to inactive
+        // make sure all of the internal constructs of download engine started
+        StateChangeListenerHub.INSTANCE.registerListener(this);
+        // reschedule inactive tasks
+        started = true;
     }
 
     @Override
@@ -49,11 +58,12 @@ public class DownloadEngine implements IDownloadEngine, IStateChangeListener {
 
     @Override
     public synchronized void stop() {
-        if ( isStarted() ) {
-            pauseRunningTasks();
-            StateChangeListenerHub.INSTANCE.removeListener(this);
-            started = false;
+        if ( !isStarted() ) {
+            return;
         }
+        pauseRunningTasks();
+        StateChangeListenerHub.INSTANCE.removeListener(this);
+        started = false;
     }
 
     public int pause(int taskId) {
@@ -124,20 +134,36 @@ public class DownloadEngine implements IDownloadEngine, IStateChangeListener {
                 || !( context.getReactiveObject() instanceof IDownloadProcess || !( context.getNextState() instanceof StateEnum ) ) ) {
             return;
         }
-        if ( transitionEnum == TransitionEnum.Receive ) {
+        final StateEnum nextState = (StateEnum) context.getNextState();
+        final IDownloadProcess reactiveObject = (IDownloadProcess) context.getReactiveObject();
+        if ( transitionEnum == TransitionEnum.Receive && reactiveObject.getTotalLength() == reactiveObject.getReceiveBytes() ) {
+            createProxy(reactiveObject).finish();
             return;
         }
-        System.out.println("Current State:" + context.getCurrentState());
-        System.out.println("Next State:" + context.getNextState());
-        System.out.println("Transition:" + context.getTransition());
-        final StateEnum nextState = (StateEnum) context.getNextState();
-        final DownloadProcess reactiveObject = (DownloadProcess) context.getReactiveObject();
         if ( nextState == StateEnum.Prepared || ( nextState == StateEnum.Started ) ) {
-            System.out.println("DownloadEngine process added");
-            activeProcesses.put(reactiveObject.getTask().getId(), reactiveObject.getProxy());
+            activeProcesses.put(reactiveObject.getId(), createProxy(reactiveObject));
         } else {
-            System.out.println("DownloadEngine process removed");
-            activeProcesses.remove(reactiveObject.getTask().getId());
+            activeProcesses.remove(reactiveObject.getId());
         }
+    }
+
+    public DownloadSegmentWorker createSegmentWorker(IDownloadProcess downloadProcess, DownloadTask task, DownloadSegment segment) {
+        return new DownloadSegmentWorker(createProxy(downloadProcess), task, segment, downloadProcess.getDataFile(), downloadProcess.getMetadataFile());
+    }
+
+    public IDownloadProcess createProxy(IDownloadProcess downloadProcess) {
+        if ( downloadProcess instanceof DownloadProcess ) {
+            return (IDownloadProcess) Proxy.newProxyInstance(downloadProcess.getClass().getClassLoader(), downloadProcess.getClass().getInterfaces(),
+                    new TransitionInvocationHandler<IDownloadProcess, StateEnum, TransitionEnum>(downloadProcess));
+        }
+        return downloadProcess;
+    }
+
+    public IDownloadProcess createDownloadProcess(ResumeTaskRequest request) {
+        return createProxy(new DownloadProcess(request));
+    }
+
+    public IDownloadProcess createDownloadProcess(CreateTaskRequest request) {
+        return createProxy(new DownloadProcess(request));
     }
 }

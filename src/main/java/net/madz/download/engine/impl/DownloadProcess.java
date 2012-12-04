@@ -26,7 +26,6 @@ public class DownloadProcess implements IDownloadProcess {
     private transient final ExecutorService receiveUpdateExecutor = Executors.newSingleThreadExecutor();
     private volatile boolean pauseFlag = false;
     private transient List<DownloadSegmentWorker> workers = new LinkedList<DownloadSegmentWorker>();
-    private IDownloadProcess proxy;
     private ExecutorService localThreadPool;
 
     public DownloadProcess(CreateTaskRequest request) {
@@ -82,7 +81,7 @@ public class DownloadProcess implements IDownloadProcess {
                 break;
             }
             if ( segment.getCurrentBytes() < segment.getEndBytes() ) {
-                DownloadSegmentWorker worker = new DownloadSegmentWorker(proxy, task, segment, dataFile, metadataFile);
+                DownloadSegmentWorker worker = DownloadEngine.getInstance().createSegmentWorker(this, task, segment);
                 workers.add(worker);
                 localThreadPool.submit(worker);
             }
@@ -208,21 +207,28 @@ public class DownloadProcess implements IDownloadProcess {
         return task;
     }
 
-    public void setProxy(IDownloadProcess proxy) {
-        this.proxy = proxy;
-    }
-
     @Override
-    public int getTaskId() {
+    public int getId() {
         return this.task.getId();
-    }
-
-    public synchronized IDownloadProcess getProxy() {
-        return proxy;
     }
 
     @Override
     public boolean isPaused() {
         return pauseFlag;
+    }
+
+    @Override
+    public File getMetadataFile() {
+        return metadataFile;
+    }
+
+    @Override
+    public File getDataFile() {
+        return dataFile;
+    }
+
+    @Override
+    public long getTotalLength() {
+        return this.task.getTotalLength();
     }
 }

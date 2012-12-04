@@ -1,20 +1,12 @@
 package net.madz.download.service.services;
 
-import java.lang.reflect.Proxy;
 import java.util.Arrays;
 import java.util.List;
 
-import net.madz.core.lifecycle.IStateChangeListener;
-import net.madz.core.lifecycle.StateContext;
-import net.madz.core.lifecycle.impl.StateChangeListenerHub;
-import net.madz.core.lifecycle.impl.TransitionInvocationHandler;
 import net.madz.download.agent.ITelnetClient;
 import net.madz.download.engine.DownloadTask;
 import net.madz.download.engine.IDownloadProcess;
-import net.madz.download.engine.IDownloadProcess.StateEnum;
-import net.madz.download.engine.IDownloadProcess.TransitionEnum;
 import net.madz.download.engine.impl.DownloadEngine;
-import net.madz.download.engine.impl.DownloadProcess;
 import net.madz.download.service.IService;
 import net.madz.download.service.IServiceResponse;
 import net.madz.download.service.annotations.Arg;
@@ -29,10 +21,8 @@ import net.madz.download.service.responses.CreateTaskResponse;
         @Option(description = "thread number", fullName = "--threadNumber", shortName = "-n"),
         @Option(description = "ReCreate a new download task", fullName = "--reCreate", shortName = "-r") }, request = CreateTaskRequest.class,
         description = "This command is responsible for downloding specified url resource.")
-public class CreateTaskService implements IService<CreateTaskRequest>, IStateChangeListener {
+public class CreateTaskService implements IService<CreateTaskRequest> {
 
-    private DownloadProcess process;
-    private IDownloadProcess iProcess;
     private ITelnetClient client;
 
     @Override
@@ -56,40 +46,25 @@ public class CreateTaskService implements IService<CreateTaskRequest>, IStateCha
         if ( null == request || null == request.getUrl() ) {
             throw new ServiceException("Create task request or URL should not be null.");
         }
-        CreateTaskResponse downloadResponse = new CreateTaskResponse();
-        if ( checkWhetherDownloaded(request) ) {
-            if ( request.isReCreate() ) {
-                // Change the filename if equals to the older one.
-                //
-                String newName = getNewFileName(request.getFolder(), request.getFilename());
-                request.setFilename(newName);
+        if ( isDownloaded(request) && !request.isReCreate()) {
+            final String confirmation = "The task is finished. Do you want to create a new task? (Y:N): ";
+            String response = null;
+            do {
+                response = client.acquireConfirm(confirmation);
+            } while ( null == response || 0 >= response.length() );
+            if ( !"Y".equalsIgnoreCase(response) ) {
+                return new CreateTaskResponse("Request ignored.");
             } else {
-                String output = "The task is finished. Do you want to reload the task? (Y:N): ";
-                String response = client.acquireConfirm(output);
-                while ( null == response || 0 >= response.length() ) {
-                    response = client.acquireConfirm(output);
-                }
-                if ( "Y".equalsIgnoreCase(response) ) {
-                    // Change the filename if equals to the older one.
-                    //
-                    String newName = getNewFileName(request.getFolder(), request.getFilename());
-                    request.setFilename(newName);
-                } else {
-                    downloadResponse.setId("");
-                    return downloadResponse;
-                }
+                request.setFilename(getNewFileName(request.getFolder(), request.getFilename()));
             }
+        } else if (isDownloaded(request) && request.isReCreate()) {
+            request.setFilename(getNewFileName(request.getFolder(), request.getFilename()));
         }
-        process = new DownloadProcess(request);
-        iProcess = (IDownloadProcess) Proxy.newProxyInstance(process.getClass().getClassLoader(), process.getClass().getInterfaces(),
-                new TransitionInvocationHandler<IDownloadProcess, StateEnum, TransitionEnum>(process));
-        process.setProxy(iProcess);
-        iProcess.prepare();
-        StateChangeListenerHub.INSTANCE.registerListener(this);
-        iProcess.start();
-        downloadResponse = new CreateTaskResponse();
-        downloadResponse.setId(String.valueOf(iProcess.getTaskId()));
-        return downloadResponse;
+
+        IDownloadProcess downloadProcess = DownloadEngine.getInstance().createDownloadProcess(request);
+        downloadProcess.prepare();
+        downloadProcess.start();
+        return new CreateTaskResponse(String.valueOf(downloadProcess.getId()));
     }
 
     private String getNewFileName(String folderName, String filename) {
@@ -115,13 +90,13 @@ public class CreateTaskService implements IService<CreateTaskRequest>, IStateCha
             } else if ( results.length == 2 ) {
                 newName = results[0].concat(".").concat("1").concat(".").concat(results[1]);
             } else if ( results.length == 3 ) {
-                // if the results[length - 2] is not a number, then add .1 
+                // if the results[length - 2] is not a number, then add .1
                 // else results[length - 2] ++
                 // TODO
                 int number = Integer.valueOf(results[1]).intValue();
                 int newNumber = number + 1;
                 newName = results[0].concat(".").concat(newNumber + "").concat(".").concat(results[2]);
-            } 
+            }
             newName = generateNewName(folderName, newName, tasks);
         } else {
             newName = oldName;
@@ -129,34 +104,9 @@ public class CreateTaskService implements IService<CreateTaskRequest>, IStateCha
         return newName;
     }
 
-    private boolean checkWhetherDownloaded(CreateTaskRequest request) {
+    private boolean isDownloaded(CreateTaskRequest request) {
         final DownloadTask[] tasks = DownloadEngine.getInstance().findByUrl(request.getUrl());
         return tasks.length > 0;
-    }
-
-    @Override
-    public void onStateChanged(StateContext<?, ?> context) {
-        System.out.println("Create Task Service process added.");
-        final Object reactiveObject = context.getReactiveObject();
-        if ( !( reactiveObject instanceof IDownloadProcess ) ) {
-            return;
-        }
-        IDownloadProcess other = (IDownloadProcess) reactiveObject;
-        System.out.println("Create Task Service other task id" + other.getTaskId());
-        System.out.println("Create Task Service this task id" + this.iProcess.getTaskId());
-        if ( other.getTaskId() != this.iProcess.getTaskId() ) {
-            return;
-        }
-        synchronized (process) {
-            if ( context.getTransition() != TransitionEnum.Receive ) {
-                return;
-            }
-            System.out.println("Create Task Service:" + process.getReceiveBytes());
-            if ( process.getReceiveBytes() == process.getTask().getTotalLength() ) {
-                StateChangeListenerHub.INSTANCE.removeListener(this);
-                iProcess.finish();
-            }
-        }
     }
 
     @Override

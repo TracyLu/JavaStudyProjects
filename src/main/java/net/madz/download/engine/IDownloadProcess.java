@@ -12,6 +12,7 @@ import static net.madz.download.engine.IDownloadProcess.TransitionEnum.Restart;
 import static net.madz.download.engine.IDownloadProcess.TransitionEnum.Resume;
 import static net.madz.download.engine.IDownloadProcess.TransitionEnum.Start;
 
+import java.io.File;
 import java.io.Serializable;
 import java.util.Collections;
 import java.util.HashMap;
@@ -336,7 +337,16 @@ public interface IDownloadProcess extends Serializable, IReactiveObject {
     @Transition
     void resume();
     
-    int getTaskId();
+    int getId();
 
     boolean isPaused();
+
+    File getDataFile();
+
+    File getMetadataFile();
+
+    long getReceiveBytes();
+
+    long getTotalLength();
+
 }
