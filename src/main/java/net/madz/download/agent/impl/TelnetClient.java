@@ -100,6 +100,10 @@ public class TelnetClient<R extends IServiceRequest, S extends IService<R>> impl
                         } catch (ServiceException ex) {
                             printAndFlush(ex.getMessage());
                             continue;
+                        } finally {
+                            if ( "quit".equalsIgnoreCase(request.getCommandName()) ) {
+                                break;
+                            }
                         }
                     }
                 } catch (IOException e) {
@@ -182,6 +186,11 @@ public class TelnetClient<R extends IServiceRequest, S extends IService<R>> impl
             throw new IllegalStateException(MessageConsts.SERVICE_IS_NOT_STARTED_YET);
         }
         listeningThread.interrupt();
+        try {
+            socket.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         try {
             while ( isStarted() ) {
                 wait();

@@ -15,6 +15,7 @@ public class ServiceEndpoint implements IServiceEndpoint {
     private boolean started = false;
     private Thread workingThread = null;
     private static ServiceEndpoint endpoint = new ServiceEndpoint();
+    private ServerSocket server;
 
     private ServiceEndpoint() {
         super();
@@ -31,14 +32,16 @@ public class ServiceEndpoint implements IServiceEndpoint {
         }
         workingThread = new Thread(new Runnable() {
 
+
             @Override
             public void run() {
                 synchronized (ServiceEndpoint.this) {
                     started = true;
                     ServiceEndpoint.this.notify();
                 }
+                server = null;
                 try {
-                    ServerSocket server = new ServerSocket(9999);
+                    server = new ServerSocket(9999);
                     while ( !Thread.currentThread().isInterrupted() ) {
                         Socket socket = server.accept();
                         ITelnetClient client = createClient(socket);
@@ -49,6 +52,11 @@ public class ServiceEndpoint implements IServiceEndpoint {
                 } finally {
                     synchronized (ServiceEndpoint.this) {
                         started = false;
+                        try {
+                            server.close();
+                        } catch (IOException ignored) {
+                            LogUtils.error(ServiceEndpoint.class, ignored);
+                        }
                         workingThread = null;
                         ServiceEndpoint.this.notify();
                     }
@@ -79,8 +87,13 @@ public class ServiceEndpoint implements IServiceEndpoint {
         assert null != workingThread;
         workingThread.interrupt();
         try {
+            server.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        try {
             while ( isStarted() ) {
-                wait();
+                wait(500);
             }
         } catch (InterruptedException ignored) {
             LogUtils.error(ServiceEndpoint.class, ignored);

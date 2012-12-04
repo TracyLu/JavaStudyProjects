@@ -6,6 +6,6 @@ public class ServiceEndpointTest extends AbsServiceEndpointTest<ServiceEndpoint>
 
     @Override
     public ServiceEndpoint createService() {
-        return new ServiceEndpoint();
+        return ServiceEndpoint.getInstance();
     }
 }

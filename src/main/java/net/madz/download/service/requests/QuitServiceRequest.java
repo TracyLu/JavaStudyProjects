@@ -6,7 +6,6 @@ import net.madz.download.service.annotations.Command;
 import net.madz.download.service.annotations.Option;
 import net.madz.download.service.exception.ServiceException;
 
-@Command(arguments = {}, commandName = "quit", options = {}, request = QuitServiceRequest.class, description="Quit the application.")
 public class QuitServiceRequest implements IServiceRequest {
 
     String commandName;
