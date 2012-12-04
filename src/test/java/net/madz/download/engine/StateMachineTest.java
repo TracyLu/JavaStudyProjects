@@ -11,6 +11,7 @@ import net.madz.core.lifecycle.meta.impl.StateMachineMetaDataBuilderImpl;
 import net.madz.core.verification.VerificationFailureSet;
 import net.madz.download.engine.IDownloadProcess.StateEnum;
 import net.madz.download.engine.IDownloadProcess.TransitionEnum;
+import net.madz.download.engine.impl.DownloadEngine;
 import net.madz.download.engine.impl.DownloadProcess;
 import net.madz.download.service.requests.CreateTaskRequest;
 import net.madz.download.service.services.CreateTaskService;
@@ -24,14 +25,14 @@ public class StateMachineTest {
     public void should_in_right_state_after_transition() {
         final Dumper dumper = new Dumper(System.out);
         final StateMachineMetaData<IDownloadProcess, StateEnum, TransitionEnum> machineMetaData = testBuildStateMachineMetaData(dumper);
-        final DownloadProcess process = createSampleProcess();
+        final IDownloadProcess process = createSampleProcess();
         testTransition(dumper, process, machineMetaData);
     }
    @Test
    public void pause_and_restart_task() {
        final Dumper dumper = new Dumper(System.out);
        final StateMachineMetaData<IDownloadProcess, StateEnum, TransitionEnum> machineMetaData = testBuildStateMachineMetaData(dumper);
-       final DownloadProcess process = createSampleProcess();
+       final IDownloadProcess process = createSampleProcess();
        testTransition_with_pause_restart(dumper, process, machineMetaData);
    }
     private StateMachineMetaData<IDownloadProcess, StateEnum, TransitionEnum> testBuildStateMachineMetaData(Dumper dumper) {
@@ -49,18 +50,18 @@ public class StateMachineTest {
         return machineMetaData;
     }
 
-    private DownloadProcess createSampleProcess() {
+    private IDownloadProcess createSampleProcess() {
         CreateTaskRequest r = new CreateTaskRequest();
         r.setUrl("https://github-central.s3.amazonaws.com/mac/GitHub%20for%20Mac%2053.zip");
         r.setFilename("git.zip");
         r.setFolder("/Users/tracy/Downloads/demo");
-        final DownloadProcess process = new DownloadProcess(r);
+        final IDownloadProcess process = DownloadEngine.getInstance().createDownloadProcess(r);
         final List<IDownloadProcess> list = new ArrayList<IDownloadProcess>();
         list.add(process);
         return process;
     }
 
-    private void testTransition(Dumper dumper, final DownloadProcess process,
+    private void testTransition(Dumper dumper, final IDownloadProcess process,
             final StateMachineMetaData<IDownloadProcess, StateEnum, TransitionEnum> machineMetaData) {
         dumper.println("");
         dumper.println("Test Transition");
@@ -68,7 +69,6 @@ public class StateMachineTest {
         @SuppressWarnings({ "rawtypes", "unchecked" })
         IDownloadProcess iProcess = (IDownloadProcess) Proxy.newProxyInstance(StateMachineTest.class.getClassLoader(), new Class[] { IDownloadProcess.class },
                 new TransitionInvocationHandler(process));
-        process.setProxy(iProcess);
         dumper.print("From = ");
         machineMetaData.getStateMetaData((StateEnum) iProcess.getState()).dump(dumper);
         iProcess.prepare();
@@ -83,7 +83,7 @@ public class StateMachineTest {
         machineMetaData.getStateMetaData((StateEnum) iProcess.getState()).dump(dumper);
         synchronized (process) {
             try {
-                while ( process.getReceiveBytes() != process.getTask().getTotalLength() ) {
+                while ( process.getReceiveBytes() != process.getTotalLength() ) {
                     process.wait();
                 }
                 iProcess.finish();
@@ -100,14 +100,13 @@ public class StateMachineTest {
         dumper.print("To  444 = ");
         machineMetaData.getStateMetaData((StateEnum) iProcess.getState()).dump(dumper);
     }
-    private void testTransition_with_pause_restart(Dumper dumper, DownloadProcess process, StateMachineMetaData<IDownloadProcess, StateEnum, TransitionEnum> machineMetaData) {
+    private void testTransition_with_pause_restart(Dumper dumper, IDownloadProcess process, StateMachineMetaData<IDownloadProcess, StateEnum, TransitionEnum> machineMetaData) {
         dumper.println("");
         dumper.println("Test Transition");
         dumper.println("");
         @SuppressWarnings({ "rawtypes", "unchecked" })
         IDownloadProcess iProcess = (IDownloadProcess) Proxy.newProxyInstance(StateMachineTest.class.getClassLoader(), new Class[] { IDownloadProcess.class },
                 new TransitionInvocationHandler(process));
-        process.setProxy(iProcess);
         dumper.print("From = ");
         machineMetaData.getStateMetaData((StateEnum) iProcess.getState()).dump(dumper);
         iProcess.prepare();
