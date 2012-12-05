@@ -48,7 +48,10 @@ public class ListTasksService implements IService<ListTasksRequest> {
             tasks = Arrays.asList(DownloadEngine.getInstance().findByState(IDownloadProcess.StateEnum.Paused));
         } else if ( request.isRunning() ) {
             tasks = Arrays.asList(DownloadEngine.getInstance().findByState(IDownloadProcess.StateEnum.Prepared));
-            tasks.addAll(Arrays.asList(DownloadEngine.getInstance().findByState(IDownloadProcess.StateEnum.Started)));
+            List<DownloadTask> startedTasks = Arrays.asList(DownloadEngine.getInstance().findByState(IDownloadProcess.StateEnum.Started));
+            for (DownloadTask task: startedTasks) {
+                tasks.add(task);
+            }
         } else {
             throw new ServiceException("not supported");
         }

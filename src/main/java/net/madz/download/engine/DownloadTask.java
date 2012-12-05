@@ -7,7 +7,6 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
-
 public final class DownloadTask implements Serializable {
 
     private static final long serialVersionUID = 4357100059823468260L;
@@ -26,9 +25,11 @@ public final class DownloadTask implements Serializable {
     public int getId() {
         return id;
     }
+
     public void setId(int id) {
         this.id = id;
     }
+
     public URL getUrl() {
         return url;
     }
@@ -71,6 +72,9 @@ public final class DownloadTask implements Serializable {
 
     public long getReceivedBytes() {
         long receivedBytes = 0;
+        if ( 0 >= this.getSegments().size() ) {
+            return 0;
+        }
         for ( int i = 0; i < this.segmentsNumber; i++ ) {
             DownloadSegment segment = this.segments.get(i);
             long startBytes = segment.getStartBytes();

@@ -3,6 +3,7 @@ package net.madz.download.engine.impl;
 import java.io.File;
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -26,10 +27,11 @@ import net.madz.download.service.requests.ResumeTaskRequest;
 public class DownloadEngine implements IDownloadEngine, IStateChangeListener {
 
     private static final String META_SUFFIX = ".meta";
+    private static final String META_FOLDER = "." + File.separator + "meta" + File.separator;
     private boolean started;
-    private static DownloadEngine instance = new DownloadEngine();
-    private ConcurrentHashMap<StateEnum, LinkedList<DownloadTask>> allTasks = new ConcurrentHashMap<StateEnum, LinkedList<DownloadTask>>();
-    private ConcurrentHashMap<Integer, IDownloadProcess> activeProcesses = new ConcurrentHashMap<Integer, IDownloadProcess>();
+    private final static DownloadEngine instance = new DownloadEngine();
+    private volatile ConcurrentHashMap<StateEnum, HashMap<Integer, DownloadTask>> allTasks = new ConcurrentHashMap<StateEnum, HashMap<Integer, DownloadTask>>();
+    private volatile ConcurrentHashMap<Integer, IDownloadProcess> activeProcesses = new ConcurrentHashMap<Integer, IDownloadProcess>();
 
     public static DownloadEngine getInstance() {
         return instance;
@@ -58,12 +60,12 @@ public class DownloadEngine implements IDownloadEngine, IStateChangeListener {
 
     private void loadAllTasks() {
         DownloadTask[] tasks = MetaManager.load("./meta");
-        for (StateEnum state: StateEnum.values()) {
-            allTasks.put(state, new LinkedList<DownloadTask>());
+        for ( StateEnum state : StateEnum.values() ) {
+            allTasks.put(state, new HashMap<Integer, DownloadTask>());
         }
         for ( DownloadTask task : tasks ) {
             StateEnum state = StateEnum.valueof(task.getState());
-            allTasks.get(state).add(task);
+            allTasks.get(state).put(task.getId(), task);
         }
     }
 
@@ -103,8 +105,11 @@ public class DownloadEngine implements IDownloadEngine, IStateChangeListener {
 
     @Override
     public DownloadTask findById(int id) {
+        System.out.println("FindById: " + id);
         final DownloadTask[] tasks = listAllTasks();
+        System.out.println("FindById tasks" + tasks.length);
         for ( DownloadTask task : tasks ) {
+            System.out.println("FindById task:" + task);
             if ( id == task.getId() ) {
                 return task;
             }
@@ -127,19 +132,21 @@ public class DownloadEngine implements IDownloadEngine, IStateChangeListener {
         return result.toArray(new DownloadTask[result.size()]);
     }
 
-    public DownloadTask[] listAllTasks() {
-        return MetaManager.load("./meta");
-    }
-
-    public DownloadTask[] findByState(IDownloadProcess.StateEnum state) {
-        final ArrayList<DownloadTask> result = new ArrayList<DownloadTask>();
-        final DownloadTask[] tasks = listAllTasks();
-        for ( DownloadTask task : tasks ) {
-            if ( state.ordinal() == task.getState() ) {
-                result.add(task);
+    public synchronized DownloadTask[] listAllTasks() {
+        LinkedList<DownloadTask> results = new LinkedList<DownloadTask>();
+        Set<Entry<StateEnum, HashMap<Integer, DownloadTask>>> entrySet = allTasks.entrySet();
+        for ( Entry<StateEnum, HashMap<Integer, DownloadTask>> entry : entrySet ) {
+            HashMap<Integer, DownloadTask> tasks = entry.getValue();
+            for ( DownloadTask task : tasks.values() ) {
+                results.add(task);
             }
         }
-        return result.toArray(new DownloadTask[result.size()]);
+        return results.toArray(new DownloadTask[results.size()]);
+    }
+
+    public synchronized DownloadTask[] findByState(IDownloadProcess.StateEnum state) {
+        HashMap<Integer, DownloadTask> result = allTasks.get(state);
+        return result.values().toArray(new DownloadTask[result.size()]);
     }
 
     @Override
@@ -150,11 +157,29 @@ public class DownloadEngine implements IDownloadEngine, IStateChangeListener {
                 || !( context.getReactiveObject() instanceof IDownloadProcess || !( context.getNextState() instanceof StateEnum ) ) ) {
             return;
         }
+        final StateEnum currentState = (StateEnum) context.getCurrentState();
         final StateEnum nextState = (StateEnum) context.getNextState();
         final IDownloadProcess reactiveObject = (IDownloadProcess) context.getReactiveObject();
         if ( transitionEnum == TransitionEnum.Receive && reactiveObject.getTotalLength() == reactiveObject.getReceiveBytes() ) {
             createProxy(reactiveObject).finish();
             return;
+        }
+        if ( transitionEnum == TransitionEnum.Receive ) {
+            return;
+        }
+        synchronized (this) {
+            HashMap<Integer, DownloadTask> currentStateTasksSet = allTasks.get(currentState);
+            HashMap<Integer, DownloadTask> nextStateTasksSet = allTasks.get(nextState);
+            if ( currentState != nextState ) {
+                if ( !nextStateTasksSet.containsKey(reactiveObject.getId()) ) {
+                    nextStateTasksSet.put(reactiveObject.getId(), findById(reactiveObject.getId()));
+                }
+                if ( currentStateTasksSet.containsKey(reactiveObject.getId()) ) {
+                    currentStateTasksSet.remove(reactiveObject.getId());
+                }
+                allTasks.put(currentState, currentStateTasksSet);
+                allTasks.put(nextState, nextStateTasksSet);
+            }
         }
         if ( nextState == StateEnum.Prepared || ( nextState == StateEnum.Started ) ) {
             activeProcesses.put(reactiveObject.getId(), createProxy(reactiveObject));
@@ -176,14 +201,15 @@ public class DownloadEngine implements IDownloadEngine, IStateChangeListener {
     }
 
     public IDownloadProcess createDownloadProcess(ResumeTaskRequest request) {
-        final DownloadTask task = MetaManager.load("./meta/paused", request.getId());
-        final File metadataFile = new File("./meta/paused/" + task.getFileName() + META_SUFFIX);
+        final DownloadTask task = this.findById(request.getId());
+        final File metadataFile = new File(META_FOLDER + task.getFileName() + META_SUFFIX);
         return createProxy(new DownloadProcess(task, metadataFile));
     }
 
     public IDownloadProcess createDownloadProcess(CreateTaskRequest request) {
         final DownloadTask task = MetaManager.createDownloadTask(request);
-        final File metadataFile = new File("./meta/new/" + request.getFilename() + META_SUFFIX);
+        allTasks.get(StateEnum.New).put(task.getId(), task);
+        final File metadataFile = new File(META_FOLDER + request.getFilename() + META_SUFFIX);
         MetaManager.serializeForNewState(task, metadataFile);
         return createProxy(new DownloadProcess(task, metadataFile));
     }

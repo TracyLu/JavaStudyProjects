@@ -17,6 +17,7 @@ import net.madz.download.utils.LogUtils;
 
 public class DownloadProcess implements IDownloadProcess {
 
+    private static final String META_FOLDER = "./meta/";
     private static final long serialVersionUID = -2404735057674043661L;
     private final DownloadTask task;
     private volatile long receiveBytes;
@@ -58,7 +59,6 @@ public class DownloadProcess implements IDownloadProcess {
         } catch (IOException ignored) {
             LogUtils.error(DownloadProcess.class, ignored);
         }
-        metadataFile = MetaManager.move(metadataFile, new File("./meta/prepared"));
     }
 
     @Override
@@ -75,7 +75,6 @@ public class DownloadProcess implements IDownloadProcess {
                 localThreadPool.submit(worker);
             }
         }
-        metadataFile = MetaManager.move(metadataFile, new File("./meta/started"));
     }
 
     @Override
@@ -85,6 +84,7 @@ public class DownloadProcess implements IDownloadProcess {
             @Override
             public void run() {
                 DownloadProcess.this.receiveBytes += bytes;
+                System.out.println("Received bytes:" + bytes + " Total Length:" + task.getTotalLength());
                 synchronized (DownloadProcess.this) {
                     if ( receiveBytes == task.getTotalLength() ) {
                         DownloadProcess.this.notify();
@@ -99,10 +99,8 @@ public class DownloadProcess implements IDownloadProcess {
         resetProcessWhenNotResumable();
         if ( (byte) StateEnum.Started.ordinal() == task.getState() ) {
             task.setState((byte) StateEnum.InactiveStarted.ordinal());
-            MetaManager.move(metadataFile, new File("./meta/inactiveStarted"));
         } else if ( (byte) StateEnum.Prepared.ordinal() == task.getState() ) {
             task.setState((byte) StateEnum.InactivePrepared.ordinal());
-            MetaManager.move(metadataFile, new File("./meta/inactivePrepared"));
         }
     }
 
@@ -120,7 +118,6 @@ public class DownloadProcess implements IDownloadProcess {
 
     @Override
     public void activate() {
-        MetaManager.move(metadataFile, new File("./meta/prepared"));
     }
 
     @Override
@@ -144,14 +141,12 @@ public class DownloadProcess implements IDownloadProcess {
         } catch (IOException ignored) {
             LogUtils.debug(DownloadProcess.class, ignored.getMessage());
         }
-        metadataFile = MetaManager.move(metadataFile, new File("./meta/paused"));
     }
 
     @Override
     public void finish() {
         this.receiveUpdateExecutor.shutdown();
         this.localThreadPool.shutdown();
-        metadataFile = MetaManager.move(metadataFile, new File("./meta/finished"));
     }
 
     @Override
@@ -159,7 +154,6 @@ public class DownloadProcess implements IDownloadProcess {
         task.setState((byte) StateEnum.Failed.ordinal());
         this.receiveUpdateExecutor.shutdown();
         this.localThreadPool.shutdown();
-        metadataFile = MetaManager.move(metadataFile, new File("./meta/failed"));
     }
 
     @Override
@@ -185,7 +179,6 @@ public class DownloadProcess implements IDownloadProcess {
         }
         File folder = task.getFolder();
         dataFile = new File(folder, task.getFileName());
-        metadataFile = MetaManager.move(metadataFile, new File("./meta/prepared"));
     }
 
     public synchronized long getReceiveBytes() {

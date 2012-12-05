@@ -1,11 +1,8 @@
 package net.madz.download.engine.impl.metadata;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.RandomAccessFile;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
@@ -21,7 +18,6 @@ import net.madz.download.engine.IDownloadProcess.StateEnum;
 import net.madz.download.service.exception.ExceptionMessage;
 import net.madz.download.service.exception.ServiceException;
 import net.madz.download.service.requests.CreateTaskRequest;
-import net.madz.download.utils.FileUtils;
 import net.madz.download.utils.LogUtils;
 
 public class MetaManager {
@@ -448,46 +444,6 @@ public class MetaManager {
         }
     }
 
-    private static File copy(File resFile, File objFolderFile) {
-        if ( !resFile.exists() || !resFile.isFile() ) throw new IllegalStateException("resFile only accept file existed.");
-        if ( !objFolderFile.exists() ) objFolderFile.mkdirs();
-        File objFile = new File(objFolderFile.getPath() + File.separator + resFile.getName());
-        InputStream ins = null;
-        FileOutputStream outs = null;
-        try {
-            ins = new FileInputStream(resFile);
-            outs = new FileOutputStream(objFile);
-            byte[] buffer = new byte[1024 * 512];
-            int length;
-            while ( ( length = ins.read(buffer) ) != -1 ) {
-                outs.write(buffer, 0, length);
-            }
-        } catch (FileNotFoundException ignored) {
-            LogUtils.error(MetaManager.class, ignored);
-        } catch (IOException ignored) {
-            LogUtils.error(MetaManager.class, ignored);
-        } finally {
-            try {
-                if ( null != ins ) {
-                    ins.close();
-                }
-                if ( null != outs ) {
-                    outs.flush();
-                    outs.close();
-                }
-            } catch (IOException ignored) {
-                LogUtils.error(MetaManager.class, ignored);
-            }
-        }
-        return objFile;
-    }
-
-    public static File move(File srcFile, File objFolderFile) {
-        File targetFile = copy(srcFile, objFolderFile);
-        FileUtils.delete(srcFile);
-        return targetFile;
-    }
-
     public static void updateTaskState(File metadataFile, StateEnum state) throws FileNotFoundException, IOException {
         RandomAccessFile raf = null;
         try {
@@ -535,12 +491,7 @@ public class MetaManager {
     }
 
     public static void initiateMetadataDirs() {
-        createFolder("./meta/new");
-        createFolder("./meta/prepared");
-        createFolder("./meta/started");
-        createFolder("./meta/failed");
-        createFolder("./meta/finished");
-        createFolder("./meta/paused");
+        createFolder("./meta");
     }
 
     private static void createFolder(String path) {

@@ -50,18 +50,19 @@ public final class DownloadSegmentWorker implements Runnable {
             inputStream = openConnection.getInputStream();
             randomAccessDataFile = new RandomAccessFile(dataFile, "rw");
             long offset = nextByte;
+            long totalReceivedBytes = 0;
             while ( ( !isPauseFlag() ) && ( size = inputStream.read(buf) ) != -1 ) {
                 randomAccessDataFile.seek(offset);
                 randomAccessDataFile.write(buf, 0, size);
-                synchronized (process) {
-                    if ( !isPauseFlag() ) {
-                        process.receive(size);
-                        offset += size;
-                        MetaManager.updateSegmentDownloadProgress(metadataFile, segment.getId(), offset - 1);
-                    }
+                offset += size;
+                totalReceivedBytes += size;
+                segment.setCurrentBytes(offset -1);
+                MetaManager.updateSegmentDownloadProgress(metadataFile, segment.getId(), offset - 1);
+                if ( segment.getCurrentBytes() == segment.getEndBytes() ) {
+                    process.receive(totalReceivedBytes);
                 }
             }
-        } catch (IOException ignored) {
+        } catch (Exception ignored) {
             LogUtils.error(DownloadSegmentWorker.class, ignored);
         } finally {
             if ( null != openConnection ) {
@@ -80,7 +81,7 @@ public final class DownloadSegmentWorker implements Runnable {
         }
     }
 
-    public synchronized boolean isPauseFlag() {
+    public boolean isPauseFlag() {
         return this.process.isPaused();
     }
 }
