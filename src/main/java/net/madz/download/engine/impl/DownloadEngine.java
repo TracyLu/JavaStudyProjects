@@ -3,6 +3,7 @@ package net.madz.download.engine.impl;
 import java.io.File;
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -27,6 +28,7 @@ public class DownloadEngine implements IDownloadEngine, IStateChangeListener {
     private static final String META_SUFFIX = ".meta";
     private boolean started;
     private static DownloadEngine instance = new DownloadEngine();
+    private ConcurrentHashMap<StateEnum, LinkedList<DownloadTask>> allTasks = new ConcurrentHashMap<StateEnum, LinkedList<DownloadTask>>();
     private ConcurrentHashMap<Integer, IDownloadProcess> activeProcesses = new ConcurrentHashMap<Integer, IDownloadProcess>();
 
     public static DownloadEngine getInstance() {
@@ -46,11 +48,23 @@ public class DownloadEngine implements IDownloadEngine, IStateChangeListener {
             return;
         }
         MetaManager.initiateMetadataDirs();
+        loadAllTasks();
         // fix corrupted state from active to inactive
         // make sure all of the internal constructs of download engine started
         StateChangeListenerHub.INSTANCE.registerListener(this);
         // reschedule inactive tasks
         started = true;
+    }
+
+    private void loadAllTasks() {
+        DownloadTask[] tasks = MetaManager.load("./meta");
+        for (StateEnum state: StateEnum.values()) {
+            allTasks.put(state, new LinkedList<DownloadTask>());
+        }
+        for ( DownloadTask task : tasks ) {
+            StateEnum state = StateEnum.valueof(task.getState());
+            allTasks.get(state).add(task);
+        }
     }
 
     @Override
@@ -168,7 +182,6 @@ public class DownloadEngine implements IDownloadEngine, IStateChangeListener {
     }
 
     public IDownloadProcess createDownloadProcess(CreateTaskRequest request) {
-        
         final DownloadTask task = MetaManager.createDownloadTask(request);
         final File metadataFile = new File("./meta/new/" + request.getFilename() + META_SUFFIX);
         MetaManager.serializeForNewState(task, metadataFile);

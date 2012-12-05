@@ -291,6 +291,12 @@ public interface IDownloadProcess extends Serializable, IReactiveObject {
             Failed.transitionFunction.put(Resume, New);
             Failed.transitionFunction.put(Remove, Removed);
         }
+        public static StateEnum valueof (int ordinal) {
+            if (ordinal < 0 || ordinal >= values().length) {
+                throw new IndexOutOfBoundsException("Invalid ordinal");
+            }
+            return values()[ordinal];
+        }
         final HashMap<TransitionEnum, StateEnum> transitionFunction = new HashMap<TransitionEnum, StateEnum>();
 
         @Override
