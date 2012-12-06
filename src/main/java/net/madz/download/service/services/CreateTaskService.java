@@ -46,7 +46,7 @@ public class CreateTaskService implements IService<CreateTaskRequest> {
         if ( null == request || null == request.getUrl() ) {
             throw new ServiceException("Create task request or URL should not be null.");
         }
-        if ( isDownloaded(request) && !request.isReCreate()) {
+        if ( isDownloaded(request) && !request.isReCreate() ) {
             final String confirmation = "The task is finished. Do you want to create a new task? (Y:N): ";
             String response = null;
             do {
@@ -57,14 +57,11 @@ public class CreateTaskService implements IService<CreateTaskRequest> {
             } else {
                 request.setFilename(getNewFileName(request.getFolder(), request.getFilename()));
             }
-        } else if (isDownloaded(request) && request.isReCreate()) {
+        } else if ( isDownloaded(request) && request.isReCreate() ) {
             request.setFilename(getNewFileName(request.getFolder(), request.getFilename()));
         }
-
-        IDownloadProcess downloadProcess = DownloadEngine.getInstance().createDownloadProcess(request);
-        downloadProcess.prepare();
-        downloadProcess.start();
-        return new CreateTaskResponse(String.valueOf(downloadProcess.getId()));
+        DownloadTask task = DownloadEngine.getInstance().createDownloadTask(request);
+        return new CreateTaskResponse(String.valueOf(task.getId()));
     }
 
     private String getNewFileName(String folderName, String filename) {

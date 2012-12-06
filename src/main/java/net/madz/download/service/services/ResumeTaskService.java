@@ -40,8 +40,6 @@ public class ResumeTaskService implements IService<ResumeTaskRequest> {
     public IServiceResponse processRequest(ResumeTaskRequest request) throws ServiceException {
         IDownloadProcess iProcess = DownloadEngine.getInstance().createDownloadProcess(request);
         iProcess.resume();
-        //TODO move into scheduler
-        iProcess.start();
         return new ResumeTaskResponse("You task is resumed to download.");
     }
 }

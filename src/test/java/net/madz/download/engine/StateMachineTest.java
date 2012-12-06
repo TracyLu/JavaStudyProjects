@@ -1,5 +1,6 @@
 package net.madz.download.engine;
 
+import java.io.File;
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.List;
@@ -28,13 +29,15 @@ public class StateMachineTest {
         final IDownloadProcess process = createSampleProcess();
         testTransition(dumper, process, machineMetaData);
     }
-   @Test
-   public void pause_and_restart_task() {
-       final Dumper dumper = new Dumper(System.out);
-       final StateMachineMetaData<IDownloadProcess, StateEnum, TransitionEnum> machineMetaData = testBuildStateMachineMetaData(dumper);
-       final IDownloadProcess process = createSampleProcess();
-       testTransition_with_pause_restart(dumper, process, machineMetaData);
-   }
+
+    @Test
+    public void pause_and_restart_task() {
+        final Dumper dumper = new Dumper(System.out);
+        final StateMachineMetaData<IDownloadProcess, StateEnum, TransitionEnum> machineMetaData = testBuildStateMachineMetaData(dumper);
+        final IDownloadProcess process = createSampleProcess();
+        testTransition_with_pause_restart(dumper, process, machineMetaData);
+    }
+
     private StateMachineMetaData<IDownloadProcess, StateEnum, TransitionEnum> testBuildStateMachineMetaData(Dumper dumper) {
         dumper.println("");
         dumper.println("Dumping State Machine Meta Data");
@@ -55,8 +58,9 @@ public class StateMachineTest {
         r.setUrl("https://github-central.s3.amazonaws.com/mac/GitHub%20for%20Mac%2053.zip");
         r.setFilename("git.zip");
         r.setFolder("/Users/tracy/Downloads/demo");
-        final IDownloadProcess process = DownloadEngine.getInstance().createDownloadProcess(r);
+        final DownloadTask task = DownloadEngine.getInstance().createDownloadTask(r);
         final List<IDownloadProcess> list = new ArrayList<IDownloadProcess>();
+        IDownloadProcess process = DownloadEngine.getInstance().createProxy(new DownloadProcess(task, new File(r.getFilename() + ".meta")));
         list.add(process);
         return process;
     }
@@ -87,7 +91,6 @@ public class StateMachineTest {
                     process.wait();
                 }
                 iProcess.finish();
-                
             } catch (InterruptedException ignored) {
                 LogUtils.error(CreateTaskService.class, ignored);
             }
@@ -100,7 +103,9 @@ public class StateMachineTest {
         dumper.print("To  444 = ");
         machineMetaData.getStateMetaData((StateEnum) iProcess.getState()).dump(dumper);
     }
-    private void testTransition_with_pause_restart(Dumper dumper, IDownloadProcess process, StateMachineMetaData<IDownloadProcess, StateEnum, TransitionEnum> machineMetaData) {
+
+    private void testTransition_with_pause_restart(Dumper dumper, IDownloadProcess process,
+            StateMachineMetaData<IDownloadProcess, StateEnum, TransitionEnum> machineMetaData) {
         dumper.println("");
         dumper.println("Test Transition");
         dumper.println("");
@@ -122,10 +127,8 @@ public class StateMachineTest {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        
         iProcess.pause();
         dumper.print("To   = ");
         machineMetaData.getStateMetaData((StateEnum) iProcess.getState()).dump(dumper);
-        
     }
 }

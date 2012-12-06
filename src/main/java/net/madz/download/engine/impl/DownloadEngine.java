@@ -8,7 +8,10 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import net.madz.core.lifecycle.IStateChangeListener;
 import net.madz.core.lifecycle.ITransition;
@@ -24,15 +27,22 @@ import net.madz.download.engine.IDownloadProcess.TransitionEnum;
 import net.madz.download.engine.impl.metadata.MetaManager;
 import net.madz.download.service.requests.CreateTaskRequest;
 import net.madz.download.service.requests.ResumeTaskRequest;
+import net.madz.download.utils.LogUtils;
 
 public class DownloadEngine implements IDownloadEngine, IStateChangeListener {
 
+    public static final int MAX_TASKS_NUMBER = 10;
     public static final String META_SUFFIX = ".meta";
     public static final String META_FOLDER = "." + File.separator + "meta" + File.separator;
     private boolean started;
     private final static DownloadEngine instance = new DownloadEngine();
     private volatile ConcurrentHashMap<StateEnum, HashMap<Integer, DownloadTask>> allTasks = new ConcurrentHashMap<StateEnum, HashMap<Integer, DownloadTask>>();
     private volatile ConcurrentHashMap<Integer, IDownloadProcess> activeProcesses = new ConcurrentHashMap<Integer, IDownloadProcess>();
+    private final BlockingQueue<DownloadTask> newTasksQueue = new LinkedBlockingQueue<DownloadTask>();
+    private final BlockingQueue<IDownloadProcess> preparedDownloadProcessQueue = new ArrayBlockingQueue<IDownloadProcess>(MAX_TASKS_NUMBER);
+    private volatile int count = 0;
+    private Thread prepareThread = null;
+    private Thread dispatcherThread = null;
 
     public static DownloadEngine getInstance() {
         return instance;
@@ -53,6 +63,12 @@ public class DownloadEngine implements IDownloadEngine, IStateChangeListener {
         MetaManager.initiateMetadataDirs();
         StateChangeListenerHub.INSTANCE.registerListener(this);
         loadAllTasks();
+        prepareThread = new Thread(new PreparedThread());
+        prepareThread.setName("Prepare Thread");
+        prepareThread.start();
+        dispatcherThread = new Thread(new DispatcherThread());
+        dispatcherThread.setName("Dispatcher Thread");
+        dispatcherThread.start();
         // fix corrupted state from active to inactive
         DownloadTask[] startedTasks = findByState(StateEnum.Started);
         DownloadTask[] preparedTasks = findByState(StateEnum.Prepared);
@@ -63,6 +79,46 @@ public class DownloadEngine implements IDownloadEngine, IStateChangeListener {
         // make sure all of the internal constructs of download engine started
         // reschedule inactive tasks
         started = true;
+    }
+
+    class PreparedThread implements Runnable {
+
+        @Override
+        public void run() {
+            while ( !Thread.currentThread().isInterrupted() ) {
+                try {
+                    DownloadTask task = newTasksQueue.take();
+                    final File metadataFile = new File(META_FOLDER + task.getFileName() + META_SUFFIX);
+                    DownloadProcess downloadProcess = new DownloadProcess(task, metadataFile);
+                    IDownloadProcess proxy = DownloadEngine.getInstance().createProxy(downloadProcess);
+                    proxy.prepare();
+                    preparedDownloadProcessQueue.put(proxy);
+                } catch (InterruptedException ignored) {
+                    LogUtils.error(DownloadEngine.class, ignored);
+                }
+            }
+        }
+    }
+
+    class DispatcherThread implements Runnable {
+
+        @Override
+        public void run() {
+            while ( !Thread.currentThread().isInterrupted() ) {
+                if ( count <= MAX_TASKS_NUMBER ) {
+                    IDownloadProcess proxy = null;
+                    try {
+                        proxy = preparedDownloadProcessQueue.take();
+                        if ( null != proxy ) {
+                            proxy.start();
+                            count++;
+                        }
+                    } catch (InterruptedException ignored) {
+                        LogUtils.error(DownloadEngine.class, ignored);
+                    }
+                }
+            }
+        }
     }
 
     private void scheduleInactiveTasks(DownloadTask[] tasks) {
@@ -133,8 +189,16 @@ public class DownloadEngine implements IDownloadEngine, IStateChangeListener {
             return;
         }
         pauseRunningTasks();
+        stopWorkingThread();
         StateChangeListenerHub.INSTANCE.removeListener(this);
         started = false;
+    }
+
+    private void stopWorkingThread() {
+        assert null != prepareThread;
+        prepareThread.interrupt();
+        assert null != dispatcherThread;
+        dispatcherThread.interrupt();
     }
 
     public int pause(int taskId) {
@@ -238,6 +302,7 @@ public class DownloadEngine implements IDownloadEngine, IStateChangeListener {
             activeProcesses.put(reactiveObject.getId(), createProxy(reactiveObject));
         } else {
             activeProcesses.remove(reactiveObject.getId());
+            count--;
         }
     }
 
@@ -259,11 +324,12 @@ public class DownloadEngine implements IDownloadEngine, IStateChangeListener {
         return createProxy(new DownloadProcess(task, metadataFile));
     }
 
-    public IDownloadProcess createDownloadProcess(CreateTaskRequest request) {
+    public DownloadTask createDownloadTask(CreateTaskRequest request) {
         final DownloadTask task = MetaManager.createDownloadTask(request);
         allTasks.get(StateEnum.New).put(task.getId(), task);
         final File metadataFile = new File(META_FOLDER + request.getFilename() + META_SUFFIX);
         MetaManager.serializeForNewState(task, metadataFile);
-        return createProxy(new DownloadProcess(task, metadataFile));
+        newTasksQueue.add(task);
+        return task;
     }
 }
