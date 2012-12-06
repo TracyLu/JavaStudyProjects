@@ -15,6 +15,7 @@ import java.util.List;
 import net.madz.download.engine.DownloadSegment;
 import net.madz.download.engine.DownloadTask;
 import net.madz.download.engine.IDownloadProcess.StateEnum;
+import net.madz.download.engine.impl.DownloadEngine;
 import net.madz.download.service.exception.ExceptionMessage;
 import net.madz.download.service.exception.ServiceException;
 import net.madz.download.service.requests.CreateTaskRequest;
@@ -34,8 +35,6 @@ public class MetaManager {
             randomAccessFile.writeInt(task.getSegmentsNumber());
             randomAccessFile.seek(Consts.RESUMABLE_FLAG_POSITION);
             randomAccessFile.writeBoolean(task.isResumable());
-            randomAccessFile.seek(Consts.STATE_POSTION);
-            randomAccessFile.writeByte(StateEnum.Prepared.ordinal());
         } catch (FileNotFoundException e) {
             throw new IllegalStateException(e);
         } catch (IOException e) {
@@ -46,6 +45,7 @@ public class MetaManager {
                     randomAccessFile.close();
                 }
             } catch (IOException ignored) {
+                LogUtils.error(MetaManager.class, ignored);
             }
         }
     }
@@ -542,7 +542,7 @@ public class MetaManager {
             return null;
         }
         for ( File file : listFiles ) {
-            if ( file.isFile() && file.getName().contains("_log") ) {
+            if ( file.isFile() && file.getName().contains(DownloadEngine.META_SUFFIX) ) {
                 result.add(file);
             } else {
                 parseFolder(result, file);

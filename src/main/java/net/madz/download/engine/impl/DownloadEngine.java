@@ -5,6 +5,7 @@ import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -26,8 +27,8 @@ import net.madz.download.service.requests.ResumeTaskRequest;
 
 public class DownloadEngine implements IDownloadEngine, IStateChangeListener {
 
-    private static final String META_SUFFIX = ".meta";
-    private static final String META_FOLDER = "." + File.separator + "meta" + File.separator;
+    public static final String META_SUFFIX = ".meta";
+    public static final String META_FOLDER = "." + File.separator + "meta" + File.separator;
     private boolean started;
     private final static DownloadEngine instance = new DownloadEngine();
     private volatile ConcurrentHashMap<StateEnum, HashMap<Integer, DownloadTask>> allTasks = new ConcurrentHashMap<StateEnum, HashMap<Integer, DownloadTask>>();
@@ -45,17 +46,69 @@ public class DownloadEngine implements IDownloadEngine, IStateChangeListener {
     }
 
     @Override
-    public synchronized void start() {
+    public void start() {
         if ( isStarted() ) {
             return;
         }
         MetaManager.initiateMetadataDirs();
+        StateChangeListenerHub.INSTANCE.registerListener(this);
         loadAllTasks();
         // fix corrupted state from active to inactive
+        DownloadTask[] startedTasks = findByState(StateEnum.Started);
+        DownloadTask[] preparedTasks = findByState(StateEnum.Prepared);
+        fixCorrupttedTasks(startedTasks, StateEnum.InactiveStarted);
+        scheduleInactiveTasks(findByState(StateEnum.InactiveStarted));
+        fixCorrupttedTasks(preparedTasks, StateEnum.InactivePrepared);
+        scheduleInactiveTasks(findByState(StateEnum.InactivePrepared));
         // make sure all of the internal constructs of download engine started
-        StateChangeListenerHub.INSTANCE.registerListener(this);
         // reschedule inactive tasks
         started = true;
+    }
+
+    private void scheduleInactiveTasks(DownloadTask[] tasks) {
+        for ( DownloadTask task : tasks ) {
+            IDownloadProcess proxy = createDownloadProcess(task);
+            proxy.activate();
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            proxy.start();
+        }
+    }
+
+    private void fixCorrupttedTasks(DownloadTask[] tasks, StateEnum newState) {
+        for ( DownloadTask task : tasks ) {
+            // check whether all segments finished, but task state is still
+            // started.
+            //
+            if ( checkSegmentsAllFinished(task) ) {
+                allTasks.get(StateEnum.valueof(task.getState())).remove(task.getId());
+                task.setState((byte) StateEnum.Finished.ordinal());
+                allTasks.get(StateEnum.Finished).put(task.getId(), task);
+                continue;
+            }
+            IDownloadProcess proxy = createDownloadProcess(task);
+            proxy.inactivate();
+        }
+    }
+
+    private boolean checkSegmentsAllFinished(DownloadTask task) {
+        if ( null == task ) {
+            return true;
+        }
+        for ( DownloadSegment segment : task.getSegments() ) {
+            if ( segment.getCurrentBytes() != segment.getEndBytes() ) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private IDownloadProcess createDownloadProcess(DownloadTask task) {
+        final File metadataFile = new File(META_FOLDER + task.getFileName() + META_SUFFIX);
+        return createProxy(new DownloadProcess(task, metadataFile));
     }
 
     private void loadAllTasks() {

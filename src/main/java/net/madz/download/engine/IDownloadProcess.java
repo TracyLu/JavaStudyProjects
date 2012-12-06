@@ -115,7 +115,6 @@ public interface IDownloadProcess extends Serializable, IReactiveObject {
          * 2. Download Task data file is created 
          *    or re-created with deleting the pre-existing file (application aborted before update status to Prepared).
          *    
-         * 3.Download Task Meta-data file is moved to Prepared folder.
          */ 
         @Running(priority = 1)
         Prepared,
@@ -156,8 +155,6 @@ public interface IDownloadProcess extends Serializable, IReactiveObject {
          *   
          *   2.If resumable = false, reset segment current bytes = 0.  
          *   
-         *   3.Download Task Meta-data file is moved to InactiveStarted folder.
-         *   
          */  
         @Corrupted(recoverPriority = 0)
         InactiveStarted,
@@ -168,9 +165,8 @@ public interface IDownloadProcess extends Serializable, IReactiveObject {
          *   
          * Postconditions:
          *   
-         *   1.The tasks with "Queued" state turned to be "InactivePrepared" state.
+         *   1.The tasks with "Prepared" state turned to be "InactivePrepared" state.
          *   
-         *   2.Download Task Meta-data file is moved to InactivePrepared folder.
          */
         @Corrupted(recoverPriority = 1)
         InactivePrepared,
@@ -188,8 +184,6 @@ public interface IDownloadProcess extends Serializable, IReactiveObject {
          *   3.Resources required had been released.
          *   
          *     3.1 Download worker thread (stands for IO/CPU/MEM/NETWORK)
-         *   
-         *   4.Download Task Meta-data file is moved to Paused folder.
          *   
          */
         @Stopped
@@ -209,7 +203,6 @@ public interface IDownloadProcess extends Serializable, IReactiveObject {
          *   
          *     3.1 Download worker thread (stands for IO/CPU/MEM/NETWORK)
          *   
-         *   4.Download Task Meta-data file is moved to Finished folder.
          */
         @Stopped
         Finished,
@@ -234,7 +227,6 @@ public interface IDownloadProcess extends Serializable, IReactiveObject {
          *   
          *     2.1 Download worker thread (stands for IO/CPU/MEM/NETWORK)
          *   
-         *   3.Download Task Meta-data file is moved to Failed folder.
          */
         @Stopped
         Failed,

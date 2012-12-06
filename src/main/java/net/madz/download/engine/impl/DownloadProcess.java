@@ -98,9 +98,17 @@ public class DownloadProcess implements IDownloadProcess {
     public void inactivate() {
         resetProcessWhenNotResumable();
         if ( (byte) StateEnum.Started.ordinal() == task.getState() ) {
-            task.setState((byte) StateEnum.InactiveStarted.ordinal());
+            for ( DownloadSegment segment : task.getSegments() ) {
+                if ( segment.getState() == StateEnum.Started.ordinal() ) {
+                    segment.setState((byte) StateEnum.InactiveStarted.ordinal());
+                }
+            }
         } else if ( (byte) StateEnum.Prepared.ordinal() == task.getState() ) {
-            task.setState((byte) StateEnum.InactivePrepared.ordinal());
+            for ( DownloadSegment segment : task.getSegments() ) {
+                if ( segment.getState() == StateEnum.Prepared.ordinal() ) {
+                    segment.setState((byte) StateEnum.InactivePrepared.ordinal());
+                }
+            }
         }
     }
 
@@ -118,6 +126,21 @@ public class DownloadProcess implements IDownloadProcess {
 
     @Override
     public void activate() {
+        if ( (byte) StateEnum.InactiveStarted.ordinal() == task.getState() ) {
+            for ( DownloadSegment segment : task.getSegments() ) {
+                if ( segment.getState() == StateEnum.InactiveStarted.ordinal() ) {
+                    segment.setState((byte) StateEnum.Prepared.ordinal());
+                }
+            }
+        } else if ( (byte) StateEnum.InactivePrepared.ordinal() == task.getState() ) {
+            for ( DownloadSegment segment : task.getSegments() ) {
+                if ( segment.getState() == StateEnum.InactivePrepared.ordinal() ) {
+                    segment.setState((byte) StateEnum.Prepared.ordinal());
+                }
+            }
+        }
+        File folder = task.getFolder();
+        dataFile = new File(folder, task.getFileName());
     }
 
     @Override

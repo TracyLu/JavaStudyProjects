@@ -37,13 +37,13 @@ public class MetaManagerTest {
     }
 
     public static void testDeserializeHeadInformation() {
-        File file = new File("./meta/git.1.zip.meta");
+        File file = new File("./meta/git.zip.meta");
         DownloadTask task = MetaManager.deserializeHeadInformation(file);
         System.out.println(task.toString());
     }
 
     public static void testDeserializeSegmentsInformation() {
-        File file = new File("./meta/git.1.zip.meta");
+        File file = new File("./meta/git.zip.meta");
         DownloadTask task = MetaManager.deserializeHeadInformation(file);
         try {
             MetaManager.deserializeSegmentsInformation(task, file);
