@@ -38,8 +38,7 @@ public class ResumeTaskService implements IService<ResumeTaskRequest> {
 
     @Override
     public IServiceResponse processRequest(ResumeTaskRequest request) throws ServiceException {
-        IDownloadProcess iProcess = DownloadEngine.getInstance().createDownloadProcess(request);
-        iProcess.resume();
+        DownloadEngine.getInstance().createDownloadProcess(request);
         return new ResumeTaskResponse("You task is resumed to download.");
     }
 }

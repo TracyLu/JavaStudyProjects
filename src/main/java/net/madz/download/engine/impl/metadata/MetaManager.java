@@ -52,7 +52,7 @@ public class MetaManager {
 
     public static DownloadTask createDownloadTask(CreateTaskRequest request) {
         DownloadTask task = new DownloadTask();
-        task.setId(IdFactory.getInstance().generate());
+        task.setId(IdFactory.getInstance().getId());
         URL url = null;
         URL referURL = null;
         boolean resumable = false;

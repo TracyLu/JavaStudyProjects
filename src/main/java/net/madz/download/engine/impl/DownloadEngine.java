@@ -127,10 +127,10 @@ public class DownloadEngine implements IDownloadEngine, IStateChangeListener {
             proxy.activate();
             try {
                 Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+            } catch (InterruptedException ignored) {
+                LogUtils.error(DownloadEngine.class, ignored);
             }
-            proxy.start();
+            preparedDownloadProcessQueue.add(proxy);
         }
     }
 
@@ -318,10 +318,14 @@ public class DownloadEngine implements IDownloadEngine, IStateChangeListener {
         return downloadProcess;
     }
 
-    public IDownloadProcess createDownloadProcess(ResumeTaskRequest request) {
+    public void createDownloadProcess(ResumeTaskRequest request) {
         final DownloadTask task = this.findById(request.getId());
         final File metadataFile = new File(META_FOLDER + task.getFileName() + META_SUFFIX);
-        return createProxy(new DownloadProcess(task, metadataFile));
+        IDownloadProcess proxy = createProxy(new DownloadProcess(task, metadataFile));
+        proxy.resume();
+        System.out.println("Resumed task:");
+        System.out.println(task.toString());
+        preparedDownloadProcessQueue.add(proxy);
     }
 
     public DownloadTask createDownloadTask(CreateTaskRequest request) {

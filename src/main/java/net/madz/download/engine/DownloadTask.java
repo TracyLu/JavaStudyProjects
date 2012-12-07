@@ -137,7 +137,7 @@ public final class DownloadTask implements Serializable {
                 segmentsInformation.append(",state=" + segment.getState());
             }
         }
-        return "DownloadTask [url=" + url + ", referURL=" + referURL + ", folder=" + folder + ", fileName=" + fileName + ", totalLength=" + totalLength
+        return "DownloadTask [id=" + id +",url="+ url + ", referURL=" + referURL + ", folder=" + folder + ", fileName=" + fileName + ", totalLength=" + totalLength
                 + ", segmentsNumber=" + segmentsNumber + ", resumable=" + resumable + ", threadNumber=" + threadNumber + ", state=" + state + ", segments="
                 + segments + "]";
     }

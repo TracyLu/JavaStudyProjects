@@ -83,6 +83,7 @@ public class DownloadProcess implements IDownloadProcess {
 
             @Override
             public void run() {
+                System.out.println("orignal bytes:" + DownloadProcess.this.receiveBytes);
                 DownloadProcess.this.receiveBytes += bytes;
                 System.out.println("Received bytes:" + bytes + " Total Length:" + task.getTotalLength());
                 synchronized (DownloadProcess.this) {
