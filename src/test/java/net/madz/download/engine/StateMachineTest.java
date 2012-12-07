@@ -1,5 +1,7 @@
 package net.madz.download.engine;
 
+import static org.junit.Assert.*;
+
 import java.io.File;
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
@@ -14,6 +16,7 @@ import net.madz.download.engine.IDownloadProcess.StateEnum;
 import net.madz.download.engine.IDownloadProcess.TransitionEnum;
 import net.madz.download.engine.impl.DownloadEngine;
 import net.madz.download.engine.impl.DownloadProcess;
+import net.madz.download.service.exception.ServiceException;
 import net.madz.download.service.requests.CreateTaskRequest;
 import net.madz.download.service.services.CreateTaskService;
 import net.madz.download.utils.LogUtils;
@@ -26,7 +29,12 @@ public class StateMachineTest {
     public void should_in_right_state_after_transition() {
         final Dumper dumper = new Dumper(System.out);
         final StateMachineMetaData<IDownloadProcess, StateEnum, TransitionEnum> machineMetaData = testBuildStateMachineMetaData(dumper);
-        final IDownloadProcess process = createSampleProcess();
+        IDownloadProcess process = null;
+        try {
+            process = createSampleProcess();
+        } catch (ServiceException e) {
+            fail("failed to create process.");
+        }
         testTransition(dumper, process, machineMetaData);
     }
 
@@ -34,7 +42,12 @@ public class StateMachineTest {
     public void pause_and_restart_task() {
         final Dumper dumper = new Dumper(System.out);
         final StateMachineMetaData<IDownloadProcess, StateEnum, TransitionEnum> machineMetaData = testBuildStateMachineMetaData(dumper);
-        final IDownloadProcess process = createSampleProcess();
+        IDownloadProcess process = null;
+        try {
+            process = createSampleProcess();
+        } catch (ServiceException e) {
+            fail("failed to create process.");
+        }
         testTransition_with_pause_restart(dumper, process, machineMetaData);
     }
 
@@ -53,7 +66,7 @@ public class StateMachineTest {
         return machineMetaData;
     }
 
-    private IDownloadProcess createSampleProcess() {
+    private IDownloadProcess createSampleProcess() throws ServiceException {
         CreateTaskRequest r = new CreateTaskRequest();
         r.setUrl("https://github-central.s3.amazonaws.com/mac/GitHub%20for%20Mac%2053.zip");
         r.setFilename("git.zip");

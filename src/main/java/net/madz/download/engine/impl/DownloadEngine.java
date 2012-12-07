@@ -25,6 +25,7 @@ import net.madz.download.engine.IDownloadProcess;
 import net.madz.download.engine.IDownloadProcess.StateEnum;
 import net.madz.download.engine.IDownloadProcess.TransitionEnum;
 import net.madz.download.engine.impl.metadata.MetaManager;
+import net.madz.download.service.exception.ServiceException;
 import net.madz.download.service.requests.CreateTaskRequest;
 import net.madz.download.service.requests.ResumeTaskRequest;
 import net.madz.download.utils.LogUtils;
@@ -328,7 +329,7 @@ public class DownloadEngine implements IDownloadEngine, IStateChangeListener {
         preparedDownloadProcessQueue.add(proxy);
     }
 
-    public DownloadTask createDownloadTask(CreateTaskRequest request) {
+    public DownloadTask createDownloadTask(CreateTaskRequest request) throws ServiceException {
         final DownloadTask task = MetaManager.createDownloadTask(request);
         allTasks.get(StateEnum.New).put(task.getId(), task);
         final File metadataFile = new File(META_FOLDER + request.getFilename() + META_SUFFIX);

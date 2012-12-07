@@ -50,7 +50,7 @@ public class MetaManager {
         }
     }
 
-    public static DownloadTask createDownloadTask(CreateTaskRequest request) {
+    public static DownloadTask createDownloadTask(CreateTaskRequest request) throws ServiceException {
         DownloadTask task = new DownloadTask();
         task.setId(IdFactory.getInstance().getId());
         URL url = null;
@@ -70,8 +70,8 @@ public class MetaManager {
         try {
             resumable = checkResumable(url);
             task.setResumable(resumable);
-        } catch (IOException ignored) {
-            LogUtils.error(MetaManager.class, ignored);
+        } catch (IOException ex) {
+            throw new ServiceException("Failed to connect to " + url.toString() + ". Please check your network.");
         }
         task.setTotalLength(getTotalLength(url));
         task.setState((byte) StateEnum.New.ordinal());
@@ -84,15 +84,15 @@ public class MetaManager {
         return task;
     }
 
-    public static long getTotalLength(URL url) {
+    public static long getTotalLength(URL url) throws ServiceException {
         URLConnection openConnection = null;
         int totalLength = 0;
         try {
             openConnection = url.openConnection();
             openConnection.connect();
             totalLength = openConnection.getContentLength();
-        } catch (IOException ignored) {
-            LogUtils.error(MetaManager.class, ignored);
+        } catch (IOException e) {
+            throw new ServiceException("Failed to connect to " + url.toString() + ". Please check your network.");
         }
         return totalLength;
     }
