@@ -5,7 +5,6 @@ import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -99,6 +98,8 @@ public class DownloadEngine implements IDownloadEngine, IStateChangeListener {
                     preparedDownloadProcessQueue.put(proxy);
                 } catch (InterruptedException ignored) {
                     LogUtils.error(DownloadEngine.class, ignored);
+                }finally {
+                    prepareThread = null;
                 }
             }
         }
@@ -119,6 +120,8 @@ public class DownloadEngine implements IDownloadEngine, IStateChangeListener {
                         }
                     } catch (InterruptedException ignored) {
                         LogUtils.error(DownloadEngine.class, ignored);
+                    }finally {
+                        dispatcherThread = null;
                     }
                 }
             }
@@ -356,7 +359,11 @@ public class DownloadEngine implements IDownloadEngine, IStateChangeListener {
         allTasks.get(StateEnum.New).put(task.getId(), task);
         final File metadataFile = new File(META_FOLDER + request.getFilename() + META_SUFFIX);
         MetaManager.serializeForNewState(task, metadataFile);
-        newTasksQueue.add(task);
+        try {
+            newTasksQueue.put(task);
+        } catch (InterruptedException e) {
+           throw new ServiceException("Meet the max workload. Please wait for several minutes and retry.");
+        }
         return task;
     }
 }
