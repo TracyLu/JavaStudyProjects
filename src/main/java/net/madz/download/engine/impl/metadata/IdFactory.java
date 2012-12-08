@@ -15,7 +15,6 @@ public class IdFactory implements Serializable {
     private static final int MAX_ID_NUMBER = 50;
     private File file = new File("./meta/id.meta");
     private int topNumber = 0;
-    private volatile int id = 0;
     private volatile int count = 0;
 
     public static synchronized IdFactory getInstance() {
@@ -28,8 +27,7 @@ public class IdFactory implements Serializable {
             count = 0;
         }
         count++;
-        id = topNumber - MAX_ID_NUMBER + count;
-        return id;
+        return topNumber - MAX_ID_NUMBER + count;
     }
 
     private IdFactory() {

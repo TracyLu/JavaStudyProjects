@@ -41,7 +41,7 @@ public class DownloadEngine implements IDownloadEngine, IStateChangeListener {
     private volatile ConcurrentHashMap<Integer, IDownloadProcess> activeProcesses = new ConcurrentHashMap<Integer, IDownloadProcess>();
     private final BlockingQueue<DownloadTask> newTasksQueue = new LinkedBlockingQueue<DownloadTask>();
     private final BlockingQueue<IDownloadProcess> preparedDownloadProcessQueue = new ArrayBlockingQueue<IDownloadProcess>(MAX_TASKS_NUMBER);
-    private volatile int count = 0;
+    private volatile int dispatchedTasksCount = 0;
     private Thread prepareThread = null;
     private Thread dispatcherThread = null;
 
@@ -73,10 +73,13 @@ public class DownloadEngine implements IDownloadEngine, IStateChangeListener {
         // fix corrupted state from active to inactive
         DownloadTask[] startedTasks = findByState(StateEnum.Started);
         DownloadTask[] preparedTasks = findByState(StateEnum.Prepared);
+        DownloadTask[] newTasks = findByState(StateEnum.New);
         fixCorrupttedTasks(startedTasks, StateEnum.InactiveStarted);
         scheduleInactiveTasks(findByState(StateEnum.InactiveStarted));
         fixCorrupttedTasks(preparedTasks, StateEnum.InactivePrepared);
         scheduleInactiveTasks(findByState(StateEnum.InactivePrepared));
+        // Some tasks in the new blocking queue should be re-put in the queue.
+        scheduleNewTasks(newTasks);
         // make sure all of the internal constructs of download engine started
         // reschedule inactive tasks
         started = true;
@@ -106,13 +109,13 @@ public class DownloadEngine implements IDownloadEngine, IStateChangeListener {
         @Override
         public void run() {
             while ( !Thread.currentThread().isInterrupted() ) {
-                if ( count <= MAX_TASKS_NUMBER ) {
+                if ( dispatchedTasksCount <= MAX_TASKS_NUMBER ) {
                     IDownloadProcess proxy = null;
                     try {
                         proxy = preparedDownloadProcessQueue.take();
                         if ( null != proxy ) {
                             proxy.start();
-                            count++;
+                            dispatchedTasksCount++;
                         }
                     } catch (InterruptedException ignored) {
                         LogUtils.error(DownloadEngine.class, ignored);
@@ -132,6 +135,15 @@ public class DownloadEngine implements IDownloadEngine, IStateChangeListener {
                 LogUtils.error(DownloadEngine.class, ignored);
             }
             preparedDownloadProcessQueue.add(proxy);
+        }
+    }
+
+    private void scheduleNewTasks(DownloadTask[] newTasks) {
+        if ( null == newTasks || 0 >= newTasks.length ) {
+            return;
+        }
+        for ( DownloadTask task : newTasks ) {
+            newTasksQueue.add(task);
         }
     }
 
@@ -303,7 +315,17 @@ public class DownloadEngine implements IDownloadEngine, IStateChangeListener {
             activeProcesses.put(reactiveObject.getId(), createProxy(reactiveObject));
         } else {
             activeProcesses.remove(reactiveObject.getId());
-            count--;
+            // Prepared tasks can be paused or removed directly, so we should
+            // remove them from the queue.
+            //
+            if ( currentState == StateEnum.Prepared ) {
+                preparedDownloadProcessQueue.remove(createProxy(reactiveObject));
+            }
+            // When a task done, we should reduce the count to let new prepared
+            // tasks scheduled.
+            if ( currentState == StateEnum.Started ) {
+                dispatchedTasksCount--;
+            }
         }
     }
 
