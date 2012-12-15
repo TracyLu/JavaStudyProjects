@@ -11,9 +11,9 @@ import net.madz.download.utils.LogUtils;
 public class IdFactory implements Serializable {
 
     private static final long serialVersionUID = -1505732795427201228L;
+    private static final File file = new File("./id.meta");
     private static final IdFactory instance = new IdFactory();
     private static final int MAX_ID_NUMBER = 50;
-    private File file = new File("./id.meta");
     private int topNumber = 0;
     private volatile int count = 0;
 

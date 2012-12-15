@@ -29,11 +29,11 @@ public class MetaManager {
         RandomAccessFile randomAccessFile = null;
         try {
             randomAccessFile = new RandomAccessFile(file, "rw");
-            randomAccessFile.seek(Consts.TOTAL_LENGTH_POSITION);
+            randomAccessFile.seek(MetadataConsts.TOTAL_LENGTH_POSITION);
             randomAccessFile.writeLong(task.getTotalLength());
-            randomAccessFile.seek(Consts.SEGMENTS_NUMBER_POSITION);
+            randomAccessFile.seek(MetadataConsts.SEGMENTS_NUMBER_POSITION);
             randomAccessFile.writeInt(task.getSegmentsNumber());
-            randomAccessFile.seek(Consts.RESUMABLE_FLAG_POSITION);
+            randomAccessFile.seek(MetadataConsts.RESUMABLE_FLAG_POSITION);
             randomAccessFile.writeBoolean(task.isResumable());
         } catch (FileNotFoundException e) {
             throw new IllegalStateException(e);
@@ -51,8 +51,6 @@ public class MetaManager {
     }
 
     public static DownloadTask createDownloadTask(CreateTaskRequest request) throws ServiceException {
-        DownloadTask task = new DownloadTask();
-        task.setId(IdFactory.getInstance().getId());
         URL url = null;
         URL referURL = null;
         boolean resumable = false;
@@ -62,10 +60,7 @@ public class MetaManager {
         } catch (MalformedURLException ignored) {
             LogUtils.error(MetaManager.class, ignored);
         }
-        task.setUrl(url);
-        task.setReferURL(referURL);
-        task.setFolder(new File(request.getFolder()));
-        task.setFileName(request.getFilename());
+        DownloadTask task = new DownloadTask(url,referURL,new File(request.getFolder()), request.getFilename());
         task.setThreadNumber(new Integer(request.getThreadNumber()).byteValue());
         try {
             resumable = checkResumable(url);
@@ -76,7 +71,7 @@ public class MetaManager {
         task.setTotalLength(getTotalLength(url));
         task.setState((byte) StateEnum.New.ordinal());
         if ( resumable ) {
-            int segmentsNumber = (int) ( task.getTotalLength() / Consts.ONE_SEGEMENT );
+            int segmentsNumber = (int) ( task.getTotalLength() / MetadataConsts.ONE_SEGEMENT );
             task.setSegmentsNumber(segmentsNumber <= 0 ? 1 : segmentsNumber);
         } else {
             task.setSegmentsNumber(1);
@@ -98,23 +93,23 @@ public class MetaManager {
     }
 
     public static DownloadTask deserializeHeadInformation(File file) {
-        DownloadTask task = new DownloadTask();
+        DownloadTask task = null;
         RandomAccessFile randomAccessFile = null;
         StringBuilder headInfo = new StringBuilder();
         try {
             randomAccessFile = new RandomAccessFile(file, "rw");
             // Task ID
             //
-            randomAccessFile.seek(Consts.ID_POSITION);
+            randomAccessFile.seek(MetadataConsts.ID_POSITION);
             final int id = randomAccessFile.readInt();
             task.setId(id);
             headInfo.append(" ID:" + id);
             // URL
             //
-            randomAccessFile.seek(Consts.URL_SIZE_POSITION);
+            randomAccessFile.seek(MetadataConsts.URL_SIZE_POSITION);
             final int urlLength = randomAccessFile.readInt();
             byte[] result = new byte[urlLength];
-            randomAccessFile.seek(Consts.URL_POSITION);
+            randomAccessFile.seek(MetadataConsts.URL_POSITION);
             randomAccessFile.readFully(result, 0, urlLength);
             headInfo.append(" URL:");
             String urlStr = new String(result, "utf8");
@@ -123,24 +118,27 @@ public class MetaManager {
             task.setUrl(url);
             // Refer URL
             //
-            randomAccessFile.seek(Consts.REFER_URL_SIZE_POSITION);
+            randomAccessFile.seek(MetadataConsts.REFER_URL_SIZE_POSITION);
             final int referUrlLength = randomAccessFile.readInt();
+            String referUrl = "";
             if ( 0 < referUrlLength ) {
                 result = new byte[referUrlLength];
-                randomAccessFile.seek(Consts.REFER_URL_POSITION);
+                randomAccessFile.seek(MetadataConsts.REFER_URL_POSITION);
                 randomAccessFile.readFully(result, 0, referUrlLength);
                 headInfo.append(" Refer URL:");
-                String referUrl = new String(result, "utf8");
+                referUrl = new String(result, "utf8");
                 headInfo.append(referUrl);
                 task.setReferURL(new URL(referUrl));
+            } else {
+                referUrl = "";
             }
             // Folder
             //
-            randomAccessFile.seek(Consts.FOLDER_SIZE_POSITION);
+            randomAccessFile.seek(MetadataConsts.FOLDER_SIZE_POSITION);
             final int folderLength = randomAccessFile.readInt();
             if ( 0 < folderLength ) {
                 result = new byte[folderLength];
-                randomAccessFile.seek(Consts.FOLDER_POSITION);
+                randomAccessFile.seek(MetadataConsts.FOLDER_POSITION);
                 randomAccessFile.readFully(result, 0, folderLength);
                 headInfo.append(" Folder:");
                 String folder = new String(result, "utf8");
@@ -149,55 +147,57 @@ public class MetaManager {
             }
             // File name
             //
-            randomAccessFile.seek(Consts.FILE_NAME_SIZE_POSITION);
+            randomAccessFile.seek(MetadataConsts.FILE_NAME_SIZE_POSITION);
             final int filenameLength = randomAccessFile.readInt();
             if ( 0 < filenameLength ) {
                 result = new byte[filenameLength];
-                randomAccessFile.seek(Consts.FILE_NAME_POSITION);
+                randomAccessFile.seek(MetadataConsts.FILE_NAME_POSITION);
                 randomAccessFile.readFully(result, 0, filenameLength);
                 headInfo.append(" File name:");
                 String filename = new String(result, "utf8");
                 headInfo.append(new String(result));
                 task.setFileName(filename);
             }
+            task = new DownloadTask(id,url,referURL, folder, fileName);
             // Total length
             //
-            randomAccessFile.seek(Consts.TOTAL_LENGTH_POSITION);
+            randomAccessFile.seek(MetadataConsts.TOTAL_LENGTH_POSITION);
             headInfo.append(" Total Length:");
             long totalLength = randomAccessFile.readLong();
             headInfo.append(totalLength);
             task.setTotalLength(totalLength);
             // Segments number
             //
-            randomAccessFile.seek(Consts.SEGMENTS_NUMBER_POSITION);
+            randomAccessFile.seek(MetadataConsts.SEGMENTS_NUMBER_POSITION);
             headInfo.append(" Segements Number:");
             int segmentNumber = randomAccessFile.readInt();
             headInfo.append(segmentNumber);
             task.setSegmentsNumber(segmentNumber);
             // Resumable
             //
-            randomAccessFile.seek(Consts.RESUMABLE_FLAG_POSITION);
+            randomAccessFile.seek(MetadataConsts.RESUMABLE_FLAG_POSITION);
             headInfo.append(" Resumable:");
             byte resumableValue = randomAccessFile.readByte();
-            headInfo.append(resumableValue);
             if ( resumableValue == 0 ) {
                 task.setResumable(false);
+                headInfo.append(false);
             } else {
                 task.setResumable(true);
+                headInfo.append(true);
             }
             // Thread number
             //
-            randomAccessFile.seek(Consts.THREAD_NUMBER_POSITION);
+            randomAccessFile.seek(MetadataConsts.THREAD_NUMBER_POSITION);
             headInfo.append(" Thread Number:");
             byte threadNumber = randomAccessFile.readByte();
             headInfo.append(threadNumber);
             task.setThreadNumber(threadNumber);
             // State
             //
-            randomAccessFile.seek(Consts.STATE_POSTION);
+            randomAccessFile.seek(MetadataConsts.STATE_POSTION);
             headInfo.append(" State:");
             byte stateValue = randomAccessFile.readByte();
-            headInfo.append(stateValue);
+            headInfo.append(StateEnum.valueof(stateValue));
             task.setState(stateValue);
             System.out.println("Task header Information:");
             System.out.println(headInfo.toString());
@@ -240,7 +240,7 @@ public class MetaManager {
         RandomAccessFile raf = null;
         try {
             raf = new RandomAccessFile(logFile, "rw");
-            raf.seek(Consts.STATE_POSTION);
+            raf.seek(MetadataConsts.STATE_POSTION);
             raf.writeByte(task.getState());
         } catch (Exception e) {
             LogUtils.error(MetaManager.class, e); // ignored the exception
@@ -267,7 +267,7 @@ public class MetaManager {
                 DownloadSegment item = new DownloadSegment();
                 // Segment Id
                 //
-                position = Consts.FIRST_SEGMENT_POSITION + i * Consts.SEGMENT_LENGTH;
+                position = MetadataConsts.FIRST_SEGMENT_POSITION + i * MetadataConsts.SEGMENT_LENGTH;
                 raf.seek(position);
                 segmentsInformation.append("Segment Id:");
                 final int id = raf.readInt();
@@ -275,34 +275,36 @@ public class MetaManager {
                 item.setId(id);
                 // Segment Start bytes
                 //
-                position += Consts.SEGMENT_ID_LENGTH;
+                position += MetadataConsts.SEGMENT_ID_LENGTH;
                 raf.seek(position);
-                segmentsInformation.append("Segment start bytes:");
+                segmentsInformation.append(" start bytes:");
                 final long startBytes = raf.readLong();
                 segmentsInformation.append(startBytes);
                 item.setStartBytes(startBytes);
                 // Segment End bytes
                 //
-                position += Consts.SEGMENT_START_BYTES_LENGTH;
-                segmentsInformation.append("Segment end bytes:");
+                position += MetadataConsts.SEGMENT_START_BYTES_LENGTH;
+                segmentsInformation.append(" end bytes:");
                 final long endBytes = raf.readLong();
                 segmentsInformation.append(endBytes);
                 item.setEndBytes(endBytes);
-                // Segment state
+                // Segment current bytes
                 //
-                position += Consts.SEGMENT_END_BYTES_LENGTH;
-                segmentsInformation.append("Segment current bytes:");
+                position += MetadataConsts.SEGMENT_END_BYTES_LENGTH;
+                segmentsInformation.append(" current bytes:");
                 final long currentBytes = raf.readLong();
                 segmentsInformation.append(currentBytes);
                 item.setCurrentBytes(currentBytes);
-                // Segment current bytes
+                // Segment state
                 //
-                position += Consts.SEGMENT_CURRENT_BYTES_LENGTH;
-                segmentsInformation.append("Segment state:");
+                position += MetadataConsts.SEGMENT_CURRENT_BYTES_LENGTH;
+                segmentsInformation.append(" state:");
                 final byte state = raf.readByte();
-                segmentsInformation.append(state);
+                segmentsInformation.append(StateEnum.valueof(state));
                 item.setState(state);
                 task.addSegment(item);
+                
+                segmentsInformation.append("\n");
             }
         } catch (FileNotFoundException e) {
             LogUtils.error(MetaManager.class, e);
@@ -329,43 +331,43 @@ public class MetaManager {
             // Task Id
             //
             int id = task.getId();
-            randomAccessFile.seek(Consts.ID_POSITION);
+            randomAccessFile.seek(MetadataConsts.ID_POSITION);
             randomAccessFile.writeInt(id);
             // URL
             //
             byte[] urlBytes = task.getUrl().toString().getBytes("utf8");
-            randomAccessFile.seek(Consts.URL_SIZE_POSITION);
+            randomAccessFile.seek(MetadataConsts.URL_SIZE_POSITION);
             randomAccessFile.writeInt(urlBytes.length);
-            randomAccessFile.seek(Consts.URL_POSITION);
+            randomAccessFile.seek(MetadataConsts.URL_POSITION);
             randomAccessFile.write(urlBytes);
             // REFER URL
             //
-            randomAccessFile.seek(Consts.REFER_URL_SIZE_POSITION);
+            randomAccessFile.seek(MetadataConsts.REFER_URL_SIZE_POSITION);
             byte[] referUrlBytes = task.getReferURL().toString().getBytes("utf8");
             randomAccessFile.writeInt(referUrlBytes.length);
-            randomAccessFile.seek(Consts.REFER_URL_POSITION);
+            randomAccessFile.seek(MetadataConsts.REFER_URL_POSITION);
             randomAccessFile.write(referUrlBytes);
             // FOLDER
             //
-            randomAccessFile.seek(Consts.FOLDER_SIZE_POSITION);
+            randomAccessFile.seek(MetadataConsts.FOLDER_SIZE_POSITION);
             byte[] folderBytes = task.getFolder().toString().getBytes("utf8");
             randomAccessFile.writeInt(folderBytes.length);
-            randomAccessFile.seek(Consts.FOLDER_POSITION);
+            randomAccessFile.seek(MetadataConsts.FOLDER_POSITION);
             randomAccessFile.write(folderBytes);
             // File name
             //
-            randomAccessFile.seek(Consts.FILE_NAME_SIZE_POSITION);
+            randomAccessFile.seek(MetadataConsts.FILE_NAME_SIZE_POSITION);
             byte[] filenameBytes = task.getFileName().getBytes("utf8");
             randomAccessFile.writeInt(filenameBytes.length);
-            randomAccessFile.seek(Consts.FILE_NAME_POSITION);
+            randomAccessFile.seek(MetadataConsts.FILE_NAME_POSITION);
             randomAccessFile.write(filenameBytes);
             // Thread number
             //
-            randomAccessFile.seek(Consts.THREAD_NUMBER_POSITION);
+            randomAccessFile.seek(MetadataConsts.THREAD_NUMBER_POSITION);
             randomAccessFile.writeByte(task.getThreadNumber());
             // State
             //
-            randomAccessFile.seek(Consts.STATE_POSTION);
+            randomAccessFile.seek(MetadataConsts.STATE_POSTION);
             randomAccessFile.writeByte(StateEnum.New.ordinal());
         } catch (FileNotFoundException e) {
             throw new IllegalStateException(e);
@@ -387,16 +389,16 @@ public class MetaManager {
             raf = new RandomAccessFile(metadataFile, "rw");
             for ( DownloadSegment segment : task.getSegments() ) {
                 int seq = segment.getId();
-                long position = Consts.FIRST_SEGMENT_POSITION + seq * Consts.SEGMENT_LENGTH;
+                long position = MetadataConsts.FIRST_SEGMENT_POSITION + seq * MetadataConsts.SEGMENT_LENGTH;
                 raf.seek(position);
                 raf.writeInt(seq);
-                position += Consts.SEGMENT_ID_LENGTH;
+                position += MetadataConsts.SEGMENT_ID_LENGTH;
                 raf.writeLong(segment.getStartBytes());
-                position += Consts.SEGMENT_START_BYTES_LENGTH;
+                position += MetadataConsts.SEGMENT_START_BYTES_LENGTH;
                 raf.writeLong(segment.getEndBytes());
-                position += Consts.SEGMENT_END_BYTES_LENGTH;
+                position += MetadataConsts.SEGMENT_END_BYTES_LENGTH;
                 raf.writeLong(segment.getCurrentBytes());
-                position += Consts.SEGMENT_CURRENT_BYTES_LENGTH;
+                position += MetadataConsts.SEGMENT_CURRENT_BYTES_LENGTH;
                 raf.writeByte(StateEnum.Prepared.ordinal());
             }
         } catch (FileNotFoundException ignored) {
@@ -448,7 +450,7 @@ public class MetaManager {
         RandomAccessFile raf = null;
         try {
             raf = new RandomAccessFile(metadataFile, "rw");
-            raf.seek(Consts.STATE_POSTION);
+            raf.seek(MetadataConsts.STATE_POSTION);
             raf.writeByte(state.ordinal());
         } finally {
             if ( null != raf ) {
@@ -461,11 +463,11 @@ public class MetaManager {
         RandomAccessFile raf = null;
         try {
             raf = new RandomAccessFile(metadataFile, "rw");
-            final long segmentStartPosition = Consts.FIRST_SEGMENT_POSITION + Consts.SEGMENT_LENGTH * segmentId;
-            final long endBytesPosition = segmentStartPosition + Consts.SEGMENT_ID_LENGTH + Consts.SEGMENT_START_BYTES_LENGTH;
-            final long currentBytesPosition = segmentStartPosition + Consts.SEGMENT_ID_LENGTH + Consts.SEGMENT_START_BYTES_LENGTH
-                    + Consts.SEGMENT_END_BYTES_LENGTH;
-            final long statePosition = currentBytesPosition + Consts.SEGMENT_CURRENT_BYTES_LENGTH;
+            final long segmentStartPosition = MetadataConsts.FIRST_SEGMENT_POSITION + MetadataConsts.SEGMENT_LENGTH * segmentId;
+            final long endBytesPosition = segmentStartPosition + MetadataConsts.SEGMENT_ID_LENGTH + MetadataConsts.SEGMENT_START_BYTES_LENGTH;
+            final long currentBytesPosition = segmentStartPosition + MetadataConsts.SEGMENT_ID_LENGTH + MetadataConsts.SEGMENT_START_BYTES_LENGTH
+                    + MetadataConsts.SEGMENT_END_BYTES_LENGTH;
+            final long statePosition = currentBytesPosition + MetadataConsts.SEGMENT_CURRENT_BYTES_LENGTH;
             // Log current bytes
             //
             raf.seek(currentBytesPosition);
@@ -557,9 +559,9 @@ public class MetaManager {
         try {
             raf = new RandomAccessFile(metadataFile, "rw");
             for ( int i = 0; i < task.getSegmentsNumber(); i++ ) {
-                final long segmentStartPosition = Consts.FIRST_SEGMENT_POSITION + Consts.SEGMENT_LENGTH * i;
-                final long statePosition = segmentStartPosition + Consts.SEGMENT_ID_LENGTH + Consts.SEGMENT_START_BYTES_LENGTH
-                        + Consts.SEGMENT_END_BYTES_LENGTH + Consts.SEGMENT_CURRENT_BYTES_LENGTH;
+                final long segmentStartPosition = MetadataConsts.FIRST_SEGMENT_POSITION + MetadataConsts.SEGMENT_LENGTH * i;
+                final long statePosition = segmentStartPosition + MetadataConsts.SEGMENT_ID_LENGTH + MetadataConsts.SEGMENT_START_BYTES_LENGTH
+                        + MetadataConsts.SEGMENT_END_BYTES_LENGTH + MetadataConsts.SEGMENT_CURRENT_BYTES_LENGTH;
                 // Update segment state
                 //
                 raf.seek(statePosition);

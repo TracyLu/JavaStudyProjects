@@ -3,6 +3,7 @@ package net.madz.download.service.responses;
 import java.util.List;
 
 import net.madz.download.engine.DownloadTask;
+import net.madz.download.engine.IDownloadProcess.StateEnum;
 import net.madz.download.service.IServiceResponse;
 
 public class ListTasksResponse implements IServiceResponse {
@@ -21,7 +22,7 @@ public class ListTasksResponse implements IServiceResponse {
             result.append(task.getUrl() + "\t");
             result.append(task.getFolder() + "\t");
             result.append(task.getFileName() + "\t");
-            result.append(task.getState());
+            result.append(StateEnum.valueof(task.getState()).name());
             result.append("\n");
         }
     }

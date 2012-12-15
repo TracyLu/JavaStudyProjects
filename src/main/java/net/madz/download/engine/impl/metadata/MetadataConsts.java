@@ -1,6 +1,6 @@
 package net.madz.download.engine.impl.metadata;
 
-public class Consts {
+public class MetadataConsts {
 
     public static final int ID_LENGTH = 4;
     public static final int URL_SIZE_LENGTH = 4;

@@ -1,5 +1,6 @@
 package net.madz.download.agent.protocol.impl;
 
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -18,7 +19,7 @@ public class RawCommand {
     }
 
     public List<String> getOptions() {
-        return options;
+        return Collections.unmodifiableList(options);
     }
 
     public String getName() {
@@ -26,7 +27,7 @@ public class RawCommand {
     }
 
     public List<String> getArgs() {
-        return args;
+        return Collections.unmodifiableList(args);
     }
 
     public void addArg(String arg) {
