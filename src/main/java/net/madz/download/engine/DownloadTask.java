@@ -22,6 +22,13 @@ public final class DownloadTask implements Serializable {
     private byte state;
     private List<DownloadSegment> segments = new LinkedList<DownloadSegment>();
 
+    public DownloadTask(URL url, URL referURL, File folder, String filename) {
+        this.url = url;
+        this.referURL = referURL;
+        this.folder = folder;
+        this.fileName = filename;
+    }
+
     public int getId() {
         return id;
     }

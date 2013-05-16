@@ -158,7 +158,6 @@ public class MetaManager {
                 headInfo.append(new String(result));
                 task.setFileName(filename);
             }
-            task = new DownloadTask(id,url,referURL, folder, fileName);
             // Total length
             //
             randomAccessFile.seek(MetadataConsts.TOTAL_LENGTH_POSITION);
