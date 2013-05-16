@@ -60,7 +60,7 @@ public class MetaManager {
         } catch (MalformedURLException ignored) {
             LogUtils.error(MetaManager.class, ignored);
         }
-        DownloadTask task = new DownloadTask(url,referURL,new File(request.getFolder()), request.getFilename());
+        DownloadTask task = new DownloadTask(url, referURL, new File(request.getFolder()), request.getFilename());
         task.setThreadNumber(new Integer(request.getThreadNumber()).byteValue());
         try {
             resumable = checkResumable(url);
@@ -302,7 +302,6 @@ public class MetaManager {
                 segmentsInformation.append(StateEnum.valueof(state));
                 item.setState(state);
                 task.addSegment(item);
-                
                 segmentsInformation.append("\n");
             }
         } catch (FileNotFoundException e) {
@@ -502,18 +501,23 @@ public class MetaManager {
         }
     }
 
+    /***
+     * This method deserializes download tasks from meta information.
+     * 
+     * @param root
+     * @return DownloadTask[]
+     */
     public synchronized static DownloadTask[] load(String root) {
-        List<DownloadTask> results = new LinkedList<DownloadTask>();
+        final List<DownloadTask> results = new LinkedList<DownloadTask>();
         List<File> files = new LinkedList<File>();
         files = parseFolder(files, new File(root));
         for ( File file : files ) {
-            DownloadTask task = MetaManager.deserializeHeadInformation(file);
+            final DownloadTask task = MetaManager.deserializeHeadInformation(file);
             try {
                 MetaManager.deserializeSegmentsInformation(task, file);
             } catch (ServiceException ignored) {
                 LogUtils.error(MetaManager.class, ignored);
             }
-            task.toString();
             results.add(task);
         }
         return results.toArray(new DownloadTask[results.size()]);
