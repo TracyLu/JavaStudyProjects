@@ -206,9 +206,8 @@ public class DownloadEngine implements IDownloadEngine, IStateChangeListener {
      * state.
      * 
      * @param tasks
-     * @param newState
      */
-    private void fixCorrupttedTasks(DownloadTask[] tasks, StateEnum newState) {
+    private void fixCorruptedTasks(DownloadTask[] tasks) {
         for ( DownloadTask task : tasks ) {
             // check whether all segments finished, but task state is still
             // started.
@@ -373,9 +372,9 @@ public class DownloadEngine implements IDownloadEngine, IStateChangeListener {
         DownloadTask[] startedTasks = findByState(StateEnum.Started);
         DownloadTask[] preparedTasks = findByState(StateEnum.Prepared);
         DownloadTask[] newTasks = findByState(StateEnum.New);
-        fixCorrupttedTasks(startedTasks, StateEnum.InactiveStarted);
+        fixCorruptedTasks(startedTasks);
         scheduleInactiveTasks(findByState(StateEnum.InactiveStarted));
-        fixCorrupttedTasks(preparedTasks, StateEnum.InactivePrepared);
+        fixCorruptedTasks(preparedTasks);
         scheduleInactiveTasks(findByState(StateEnum.InactivePrepared));
         // Some tasks in the new blocking queue should be re-put in the queue.
         scheduleNewTasks(newTasks);
