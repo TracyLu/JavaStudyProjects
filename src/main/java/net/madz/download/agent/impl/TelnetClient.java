@@ -36,35 +36,52 @@ public class TelnetClient<R extends IServiceRequest, S extends IService<R>> impl
         this.writer = new PrintWriter(new OutputStreamWriter(socket.getOutputStream()));
     }
 
-    private void validateSocket() {
-        if ( null == this.socket ) {
-            throw new NullPointerException(MessageConsts.SOCKET_CANNOT_BE_NULL);
+    public String acquireConfirm(String request) {
+        if ( null == request || 0 >= request.length() ) {
+            LogUtils.error(TelnetClient.class, new Exception("Please give correct feedback."));
         }
-        if ( !this.socket.isConnected() ) {
-            throw new IllegalStateException(MessageConsts.SOCKET_IS_NOT_CONNECTED);
-        }
-    }
-
-    @Override
-    public synchronized void start() {
-        if ( this.isStarted() ) {
-            throw new IllegalStateException(MessageConsts.SERVICE_IS_ALREADY_STARTED);
-        }
-        validatePrequesit();
-        listeningThread = allocatListeningThread();
-        listeningThread.setName("TelnetClient listening thread");
-        listeningThread.start();
-        while ( !started ) {
-            try {
-                wait();
-            } catch (InterruptedException e) {
-                LogUtils.error(TelnetClient.class, e);
+        writer.write(request);
+        writer.flush();
+        String response = null;
+        try {
+            response = reader.readLine();
+            while ( null == response || 0 >= response.length() ) {
+                writer.write(request);
+                writer.flush();
+                response = reader.readLine();
             }
+        } catch (IOException e) {
+            LogUtils.error(TelnetClient.class, e);
         }
+        return response;
     }
 
     private Thread allocatListeningThread() {
         return new Thread(new Runnable() {
+
+            private IServiceRequest handleCommandIllegal(RequestDeserializer deserializer, final String plainTextRequest, IllegalStateException ex) {
+                IServiceRequest request;
+                HelpRequest helpRequest = new HelpRequest();
+                helpRequest.setCommandName("help");
+                if ( ExceptionMessage.COMMAND_NOT_FOUND.equalsIgnoreCase(ex.getMessage()) ) {
+                    helpRequest.setArgCommandName("");
+                    request = helpRequest;
+                } else {
+                    String commandName = RequestDeserializer.parseCommand(plainTextRequest).getName();
+                    if ( "help".equalsIgnoreCase(commandName) ) {
+                        helpRequest.setArgCommandName("");
+                    } else {
+                        helpRequest.setArgCommandName(commandName);
+                    }
+                    request = helpRequest;
+                }
+                return request;
+            }
+
+            private void printAndFlush(String string) {
+                writer.println(string);
+                writer.flush();
+            }
 
             @SuppressWarnings("unchecked")
             @Override
@@ -117,55 +134,12 @@ public class TelnetClient<R extends IServiceRequest, S extends IService<R>> impl
                     }
                 }
             }
-
-            private void printAndFlush(String string) {
-                writer.println(string);
-                writer.flush();
-            }
-
-            private IServiceRequest handleCommandIllegal(RequestDeserializer deserializer, final String plainTextRequest, IllegalStateException ex) {
-                IServiceRequest request;
-                HelpRequest helpRequest = new HelpRequest();
-                helpRequest.setCommandName("help");
-                if ( ExceptionMessage.COMMAND_NOT_FOUND.equalsIgnoreCase(ex.getMessage()) ) {
-                    helpRequest.setArgCommandName("");
-                    request = helpRequest;
-                } else {
-                    String commandName = RequestDeserializer.parseCommand(plainTextRequest).getName();
-                    if ( "help".equalsIgnoreCase(commandName) ) {
-                        helpRequest.setArgCommandName("");
-                    } else {
-                        helpRequest.setArgCommandName(commandName);
-                    }
-                    request = helpRequest;
-                }
-                return request;
-            }
         });
     }
 
-    public String acquireConfirm(String request) {
-        if ( null == request || 0 >= request.length() ) {
-            LogUtils.error(TelnetClient.class, new Exception("Please give correct feedback."));
-        }
-        writer.write(request);
-        writer.flush();
-        String response = null;
-        try {
-            response = reader.readLine();
-            while ( null == response || 0 >= response.length() ) {
-                writer.write(request);
-                writer.flush();
-                response = reader.readLine();
-            }
-        } catch (IOException e) {
-            LogUtils.error(TelnetClient.class, e);
-        }
-        return response;
-    }
-
-    private void validatePrequesit() {
-        validateSocket();
+    @Override
+    public boolean isStarted() {
+        return this.started;
     }
 
     /* package */void releaseAll() {
@@ -177,6 +151,24 @@ public class TelnetClient<R extends IServiceRequest, S extends IService<R>> impl
         try {
             socket.close();
         } catch (IOException ignored) {
+        }
+    }
+
+    @Override
+    public synchronized void start() {
+        if ( this.isStarted() ) {
+            throw new IllegalStateException(MessageConsts.SERVICE_IS_ALREADY_STARTED);
+        }
+        validatePrequesit();
+        listeningThread = allocatListeningThread();
+        listeningThread.setName("TelnetClient listening thread");
+        listeningThread.start();
+        while ( !started ) {
+            try {
+                wait();
+            } catch (InterruptedException e) {
+                LogUtils.error(TelnetClient.class, e);
+            }
         }
     }
 
@@ -199,8 +191,16 @@ public class TelnetClient<R extends IServiceRequest, S extends IService<R>> impl
         }
     }
 
-    @Override
-    public boolean isStarted() {
-        return this.started;
+    private void validatePrequesit() {
+        validateSocket();
+    }
+
+    private void validateSocket() {
+        if ( null == this.socket ) {
+            throw new NullPointerException(MessageConsts.SOCKET_CANNOT_BE_NULL);
+        }
+        if ( !this.socket.isConnected() ) {
+            throw new IllegalStateException(MessageConsts.SOCKET_IS_NOT_CONNECTED);
+        }
     }
 }

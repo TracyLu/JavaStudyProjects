@@ -16,10 +16,75 @@ import net.madz.download.utils.LogUtils;
 
 public class RequestDeserializer {
 
+    public static RawCommand parseCommand(String plainTextRequest) {
+        RawCommand command = new RawCommand();
+        if ( null == plainTextRequest || 0 >= plainTextRequest.length() ) {
+            command.setName("help");
+            return command;
+        }
+        String[] results = plainTextRequest.split("\\s+");
+        if ( results.length <= 0 ) {
+            command.setName("help");
+            return command;
+        }
+        IService<?> service = ServiceHub.getInstance().getService(results[0]);
+        if ( null == service ) {
+            command.setName("help");
+            return command;
+        }
+        command.setName(results[0]);
+        for ( int i = 1; i < results.length; i++ ) {
+            if ( results[i].startsWith("-") || results[i].startsWith("--") ) {
+                command.addOption(results[i]);
+            } else {
+                command.addArg(results[i]);
+            }
+        }
+        return command;
+    }
+
     private boolean satisfied;
+
+    private boolean checkCommand(RawCommand rawCommand, Command command) {
+        Option[] options = command.options();
+        Arg[] arguments = command.arguments();
+        for ( String item : rawCommand.getOptions() ) {
+            boolean contained = false;
+            for ( Option expected : options ) {
+                if ( item.equalsIgnoreCase(expected.fullName()) || expected.shortName().equalsIgnoreCase(item) ) {
+                    contained = true;
+                }
+            }
+            if ( contained == false ) {
+                throw new IllegalStateException(ExceptionMessage.COMMAND_OPTION_ILLEGAL);
+            }
+        }
+        if ( arguments.length != rawCommand.getArgs().size() ) {
+            throw new IllegalStateException(ExceptionMessage.COMMAND_ARGUMENT_ILLEGAL);
+        }
+        return true;
+    }
 
     public boolean isSatisfied() {
         return satisfied;
+    }
+
+    private String normalized(String name) {
+        if ( null == name || 0 >= name.length() ) {
+            throw new NullPointerException("name should not be null.");
+        }
+        if ( name.startsWith("-") ) {
+            name = name.replace("-", "");
+        }
+        String[] results = name.split("");
+        if ( 0 <= results.length ) {
+            results[1] = results[1].toUpperCase();
+        }
+        StringBuilder result = new StringBuilder();
+        for ( int i = 0; i < results.length; i++ ) {
+            result.append(results[i]);
+        }
+        return result.toString();
     }
 
     public IServiceRequest unmarshall(String plainText) throws ServiceException {
@@ -93,70 +158,5 @@ public class RequestDeserializer {
             throw ex;
         }
         return serviceRequest;
-    }
-
-    private String normalized(String name) {
-        if ( null == name || 0 >= name.length() ) {
-            throw new NullPointerException("name should not be null.");
-        }
-        if ( name.startsWith("-") ) {
-            name = name.replace("-", "");
-        }
-        String[] results = name.split("");
-        if ( 0 <= results.length ) {
-            results[1] = results[1].toUpperCase();
-        }
-        StringBuilder result = new StringBuilder();
-        for ( int i = 0; i < results.length; i++ ) {
-            result.append(results[i]);
-        }
-        return result.toString();
-    }
-
-    public static RawCommand parseCommand(String plainTextRequest) {
-        RawCommand command = new RawCommand();
-        if ( null == plainTextRequest || 0 >= plainTextRequest.length() ) {
-            command.setName("help");
-            return command;
-        }
-        String[] results = plainTextRequest.split("\\s+");
-        if ( results.length <= 0 ) {
-            command.setName("help");
-            return command;
-        }
-        IService<?> service = ServiceHub.getInstance().getService(results[0]);
-        if ( null == service ) {
-            command.setName("help");
-            return command;
-        }
-        command.setName(results[0]);
-        for ( int i = 1; i < results.length; i++ ) {
-            if ( results[i].startsWith("-") || results[i].startsWith("--") ) {
-                command.addOption(results[i]);
-            } else {
-                command.addArg(results[i]);
-            }
-        }
-        return command;
-    }
-
-    private boolean checkCommand(RawCommand rawCommand, Command command) {
-        Option[] options = command.options();
-        Arg[] arguments = command.arguments();
-        for ( String item : rawCommand.getOptions() ) {
-            boolean contained = false;
-            for ( Option expected : options ) {
-                if ( item.equalsIgnoreCase(expected.fullName()) || expected.shortName().equalsIgnoreCase(item) ) {
-                    contained = true;
-                }
-            }
-            if ( contained == false ) {
-                throw new IllegalStateException(ExceptionMessage.COMMAND_OPTION_ILLEGAL);
-            }
-        }
-        if ( arguments.length != rawCommand.getArgs().size() ) {
-            throw new IllegalStateException(ExceptionMessage.COMMAND_ARGUMENT_ILLEGAL);
-        }
-        return true;
     }
 }

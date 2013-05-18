@@ -8,21 +8,21 @@ public class ResumeTaskRequest implements IServiceRequest {
     private String commandName;
     private String id;
 
-    public int getId() {
-        return Integer.valueOf(id);
+    @Override
+    public String getCommandName() {
+        return commandName;
     }
 
-    public void setId(String id) {
-        this.id = id;
+    public int getId() {
+        return Integer.valueOf(id);
     }
 
     public void setCommandName(String commandName) {
         this.commandName = commandName;
     }
 
-    @Override
-    public String getCommandName() {
-        return commandName;
+    public void setId(String id) {
+        this.id = id;
     }
 
     @Override

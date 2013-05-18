@@ -31,80 +31,13 @@ import net.madz.download.utils.LogUtils;
 
 public class DownloadEngine implements IDownloadEngine, IStateChangeListener {
 
-    public static final int MAX_TASKS_NUMBER = 10;
-    public static final String META_SUFFIX = ".meta";
-    public static final String META_FOLDER = "." + File.separator + "meta" + File.separator;
-    private boolean started;
-    private final static DownloadEngine instance = new DownloadEngine();
-    private volatile ConcurrentHashMap<StateEnum, HashMap<Integer, DownloadTask>> allTasks = new ConcurrentHashMap<StateEnum, HashMap<Integer, DownloadTask>>();
-    private volatile ConcurrentHashMap<Integer, IDownloadProcess> activeProcesses = new ConcurrentHashMap<Integer, IDownloadProcess>();
-    private final BlockingQueue<DownloadTask> newTasksQueue = new LinkedBlockingQueue<DownloadTask>();
-    private final BlockingQueue<IDownloadProcess> preparedDownloadProcessQueue = new ArrayBlockingQueue<IDownloadProcess>(MAX_TASKS_NUMBER);
-    private volatile int dispatchedTasksCount = 0;
-    private Thread prepareThread = null;
-    private Thread dispatcherThread = null;
-
-    public static DownloadEngine getInstance() {
-        return instance;
-    }
-
-    public ConcurrentHashMap<Integer, IDownloadProcess> getActiveProcesses() {
-        return activeProcesses;
-    }
-
-    private DownloadEngine() {
-    }
-
-    @Override
-    public void start() {
-        if ( isStarted() ) {
-            return;
-        }
-        MetaManager.initiateMetadataDirs();
-        StateChangeListenerHub.INSTANCE.registerListener(this);
-        loadAllTasks();
-        prepareThread = new Thread(new PreparedThread());
-        prepareThread.setName("Prepare Thread");
-        prepareThread.start();
-        dispatcherThread = new Thread(new DispatcherThread());
-        dispatcherThread.setName("Dispatcher Thread");
-        dispatcherThread.start();
-        // fix corrupted state from active to inactive
-        DownloadTask[] startedTasks = findByState(StateEnum.Started);
-        DownloadTask[] preparedTasks = findByState(StateEnum.Prepared);
-        DownloadTask[] newTasks = findByState(StateEnum.New);
-        fixCorrupttedTasks(startedTasks, StateEnum.InactiveStarted);
-        scheduleInactiveTasks(findByState(StateEnum.InactiveStarted));
-        fixCorrupttedTasks(preparedTasks, StateEnum.InactivePrepared);
-        scheduleInactiveTasks(findByState(StateEnum.InactivePrepared));
-        // Some tasks in the new blocking queue should be re-put in the queue.
-        scheduleNewTasks(newTasks);
-        // make sure all of the internal constructs of download engine started
-        // reschedule inactive tasks
-        started = true;
-    }
-
-    class PreparedThread implements Runnable {
-
-        @Override
-        public void run() {
-            while ( !Thread.currentThread().isInterrupted() ) {
-                try {
-                    DownloadTask task = newTasksQueue.take();
-                    final File metadataFile = new File(META_FOLDER + task.getFileName() + META_SUFFIX);
-                    DownloadProcess downloadProcess = new DownloadProcess(task, metadataFile);
-                    IDownloadProcess proxy = DownloadEngine.getInstance().createProxy(downloadProcess);
-                    proxy.prepare();
-                    preparedDownloadProcessQueue.put(proxy);
-                } catch (InterruptedException ignored) {
-                    LogUtils.error(DownloadEngine.class, ignored);
-                }finally {
-                    prepareThread = null;
-                }
-            }
-        }
-    }
-
+    /****
+     * The class DispatcherThread is responsible for taking a prepared download
+     * task from preparedDownloadProcessQueue and starting it.
+     * 
+     * @author tracy
+     * 
+     */
     class DispatcherThread implements Runnable {
 
         @Override
@@ -120,7 +53,7 @@ public class DownloadEngine implements IDownloadEngine, IStateChangeListener {
                         }
                     } catch (InterruptedException ignored) {
                         LogUtils.error(DownloadEngine.class, ignored);
-                    }finally {
+                    } finally {
                         dispatcherThread = null;
                     }
                 }
@@ -128,47 +61,63 @@ public class DownloadEngine implements IDownloadEngine, IStateChangeListener {
         }
     }
 
-    private void scheduleInactiveTasks(DownloadTask[] tasks) {
-        for ( DownloadTask task : tasks ) {
-            IDownloadProcess proxy = createDownloadProcess(task);
-            proxy.activate();
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException ignored) {
-                LogUtils.error(DownloadEngine.class, ignored);
+    /***
+     * The class PreparedThread is responsible for fetching a new task from
+     * newTasksQueue, and creating a downloadProcess and a dynamic proxy to
+     * prepare the task, then putting the proxy into
+     * preparedDownloadProcessQueue.
+     */
+    class PreparedThread implements Runnable {
+
+        @Override
+        public void run() {
+            while ( !Thread.currentThread().isInterrupted() ) {
+                try {
+                    DownloadTask task = newTasksQueue.take();
+                    final File metadataFile = new File(META_FOLDER + task.getFileName() + META_SUFFIX);
+                    DownloadProcess downloadProcess = new DownloadProcess(task, metadataFile);
+                    IDownloadProcess proxy = DownloadEngine.getInstance().createProxy(downloadProcess);
+                    proxy.prepare();
+                    preparedDownloadProcessQueue.put(proxy);
+                } catch (InterruptedException ignored) {
+                    LogUtils.error(DownloadEngine.class, ignored);
+                } finally {
+                    prepareThread = null;
+                }
             }
-            preparedDownloadProcessQueue.add(proxy);
         }
     }
 
-    private void scheduleNewTasks(DownloadTask[] newTasks) {
-        if ( null == newTasks || 0 >= newTasks.length ) {
-            return;
-        }
-        for ( DownloadTask task : newTasks ) {
-            newTasksQueue.add(task);
-        }
+    public static final int MAX_TASKS_NUMBER = 10;
+    public static final String META_SUFFIX = ".meta";
+    public static final String META_FOLDER = "." + File.separator + "meta" + File.separator;
+
+    public static DownloadEngine getInstance() {
+        return instance;
     }
 
-    private void fixCorrupttedTasks(DownloadTask[] tasks, StateEnum newState) {
-        for ( DownloadTask task : tasks ) {
-            // check whether all segments finished, but task state is still
-            // started.
-            //
-            if ( checkSegmentsAllFinished(task) ) {
-                allTasks.get(StateEnum.valueof(task.getState())).remove(task.getId());
-                task.setState((byte) StateEnum.Finished.ordinal());
-                allTasks.get(StateEnum.Finished).put(task.getId(), task);
-                continue;
-            }
-            IDownloadProcess proxy = createDownloadProcess(task);
-            proxy.inactivate();
-        }
+    private boolean started;
+    private final static DownloadEngine instance = new DownloadEngine();
+    private volatile ConcurrentHashMap<StateEnum, HashMap<Integer, DownloadTask>> allTasks = new ConcurrentHashMap<StateEnum, HashMap<Integer, DownloadTask>>();
+    private volatile ConcurrentHashMap<Integer, IDownloadProcess> activeProcesses = new ConcurrentHashMap<Integer, IDownloadProcess>();
+    private final BlockingQueue<DownloadTask> newTasksQueue = new LinkedBlockingQueue<DownloadTask>();
+    private final BlockingQueue<IDownloadProcess> preparedDownloadProcessQueue = new ArrayBlockingQueue<IDownloadProcess>(MAX_TASKS_NUMBER);
+    private volatile int dispatchedTasksCount = 0;
+    private Thread prepareThread = null;
+    private Thread dispatcherThread = null;
+
+    private DownloadEngine() {
     }
 
+    /***
+     * The method check whether all segments of a task are finished.
+     * 
+     * @param task
+     * @return
+     */
     private boolean checkSegmentsAllFinished(DownloadTask task) {
         if ( null == task ) {
-            return true;
+            return false;
         }
         for ( DownloadSegment segment : task.getSegments() ) {
             if ( segment.getCurrentBytes() != segment.getEndBytes() ) {
@@ -183,57 +132,39 @@ public class DownloadEngine implements IDownloadEngine, IStateChangeListener {
         return createProxy(new DownloadProcess(task, metadataFile));
     }
 
-    private void loadAllTasks() {
-        DownloadTask[] tasks = MetaManager.load("./meta");
-        for ( StateEnum state : StateEnum.values() ) {
-            allTasks.put(state, new HashMap<Integer, DownloadTask>());
-        }
-        for ( DownloadTask task : tasks ) {
-            StateEnum state = StateEnum.valueof(task.getState());
-            allTasks.get(state).put(task.getId(), task);
-        }
+    public void createDownloadProcess(ResumeTaskRequest request) {
+        final DownloadTask task = this.findById(request.getId());
+        final File metadataFile = new File(META_FOLDER + task.getFileName() + META_SUFFIX);
+        IDownloadProcess proxy = createProxy(new DownloadProcess(task, metadataFile));
+        proxy.resume();
+        System.out.println("Resumed task:");
+        System.out.println(task.toString());
+        preparedDownloadProcessQueue.add(proxy);
     }
 
-    @Override
-    public synchronized boolean isStarted() {
-        return started;
-    }
-
-    @Override
-    public synchronized void stop() {
-        if ( !isStarted() ) {
-            return;
+    public DownloadTask createDownloadTask(CreateTaskRequest request) throws ServiceException {
+        final DownloadTask task = MetaManager.createDownloadTask(request);
+        allTasks.get(StateEnum.New).put(task.getId(), task);
+        final File metadataFile = new File(META_FOLDER + request.getFilename() + META_SUFFIX);
+        MetaManager.serializeForNewState(task, metadataFile);
+        try {
+            newTasksQueue.put(task);
+        } catch (InterruptedException e) {
+            throw new ServiceException("Meet the max workload. Please wait for several minutes and retry.");
         }
-        pauseRunningTasks();
-        stopWorkingThread();
-        StateChangeListenerHub.INSTANCE.removeListener(this);
-        started = false;
+        return task;
     }
 
-    private void stopWorkingThread() {
-        assert null != prepareThread;
-        prepareThread.interrupt();
-        assert null != dispatcherThread;
-        dispatcherThread.interrupt();
-    }
-
-    public int pause(int taskId) {
-        final IDownloadProcess proxy = activeProcesses.get(taskId);
-        if ( null == proxy ) {
-            return -1;
+    public IDownloadProcess createProxy(IDownloadProcess downloadProcess) {
+        if ( downloadProcess instanceof DownloadProcess ) {
+            return (IDownloadProcess) Proxy.newProxyInstance(downloadProcess.getClass().getClassLoader(), downloadProcess.getClass().getInterfaces(),
+                    new TransitionInvocationHandler<IDownloadProcess, StateEnum, TransitionEnum>(downloadProcess));
         }
-        proxy.pause();
-        return taskId;
+        return downloadProcess;
     }
 
-    public Integer[] pauseRunningTasks() {
-        ArrayList<Integer> ids = new ArrayList<Integer>();
-        Set<Entry<Integer, IDownloadProcess>> entrySet = activeProcesses.entrySet();
-        for ( Entry<Integer, IDownloadProcess> entry : entrySet ) {
-            pause(entry.getKey());
-            ids.add(entry.getKey().intValue());
-        }
-        return ids.toArray(new Integer[ids.size()]);
+    public DownloadSegmentWorker createSegmentWorker(IDownloadProcess downloadProcess, DownloadTask task, DownloadSegment segment) {
+        return new DownloadSegmentWorker(createProxy(downloadProcess), task, segment, downloadProcess.getDataFile(), downloadProcess.getMetadataFile());
     }
 
     @Override
@@ -248,6 +179,11 @@ public class DownloadEngine implements IDownloadEngine, IStateChangeListener {
             }
         }
         return null;
+    }
+
+    public synchronized DownloadTask[] findByState(IDownloadProcess.StateEnum state) {
+        HashMap<Integer, DownloadTask> result = allTasks.get(state);
+        return result.values().toArray(new DownloadTask[result.size()]);
     }
 
     @Override
@@ -265,6 +201,38 @@ public class DownloadEngine implements IDownloadEngine, IStateChangeListener {
         return result.toArray(new DownloadTask[result.size()]);
     }
 
+    /***
+     * The method is responsible for fixing corrupted download tasks to correct
+     * state.
+     * 
+     * @param tasks
+     * @param newState
+     */
+    private void fixCorrupttedTasks(DownloadTask[] tasks, StateEnum newState) {
+        for ( DownloadTask task : tasks ) {
+            // check whether all segments finished, but task state is still
+            // started.
+            //
+            if ( checkSegmentsAllFinished(task) ) {
+                allTasks.get(StateEnum.valueof(task.getState())).remove(task.getId());
+                task.setState((byte) StateEnum.Finished.ordinal());
+                allTasks.get(StateEnum.Finished).put(task.getId(), task);
+                continue;
+            }
+            IDownloadProcess proxy = createDownloadProcess(task);
+            proxy.inactivate();
+        }
+    }
+
+    public ConcurrentHashMap<Integer, IDownloadProcess> getActiveProcesses() {
+        return activeProcesses;
+    }
+
+    @Override
+    public synchronized boolean isStarted() {
+        return started;
+    }
+
     public synchronized DownloadTask[] listAllTasks() {
         LinkedList<DownloadTask> results = new LinkedList<DownloadTask>();
         Set<Entry<StateEnum, HashMap<Integer, DownloadTask>>> entrySet = allTasks.entrySet();
@@ -277,9 +245,15 @@ public class DownloadEngine implements IDownloadEngine, IStateChangeListener {
         return results.toArray(new DownloadTask[results.size()]);
     }
 
-    public synchronized DownloadTask[] findByState(IDownloadProcess.StateEnum state) {
-        HashMap<Integer, DownloadTask> result = allTasks.get(state);
-        return result.values().toArray(new DownloadTask[result.size()]);
+    private void loadAllTasks() {
+        DownloadTask[] tasks = MetaManager.load("./meta");
+        for ( StateEnum state : StateEnum.values() ) {
+            allTasks.put(state, new HashMap<Integer, DownloadTask>());
+        }
+        for ( DownloadTask task : tasks ) {
+            StateEnum state = StateEnum.valueof(task.getState());
+            allTasks.get(state).put(task.getId(), task);
+        }
     }
 
     @Override
@@ -332,38 +306,99 @@ public class DownloadEngine implements IDownloadEngine, IStateChangeListener {
         }
     }
 
-    public DownloadSegmentWorker createSegmentWorker(IDownloadProcess downloadProcess, DownloadTask task, DownloadSegment segment) {
-        return new DownloadSegmentWorker(createProxy(downloadProcess), task, segment, downloadProcess.getDataFile(), downloadProcess.getMetadataFile());
-    }
-
-    public IDownloadProcess createProxy(IDownloadProcess downloadProcess) {
-        if ( downloadProcess instanceof DownloadProcess ) {
-            return (IDownloadProcess) Proxy.newProxyInstance(downloadProcess.getClass().getClassLoader(), downloadProcess.getClass().getInterfaces(),
-                    new TransitionInvocationHandler<IDownloadProcess, StateEnum, TransitionEnum>(downloadProcess));
+    public int pause(int taskId) {
+        final IDownloadProcess proxy = activeProcesses.get(taskId);
+        if ( null == proxy ) {
+            return -1;
         }
-        return downloadProcess;
+        proxy.pause();
+        return taskId;
     }
 
-    public void createDownloadProcess(ResumeTaskRequest request) {
-        final DownloadTask task = this.findById(request.getId());
-        final File metadataFile = new File(META_FOLDER + task.getFileName() + META_SUFFIX);
-        IDownloadProcess proxy = createProxy(new DownloadProcess(task, metadataFile));
-        proxy.resume();
-        System.out.println("Resumed task:");
-        System.out.println(task.toString());
-        preparedDownloadProcessQueue.add(proxy);
-    }
-
-    public DownloadTask createDownloadTask(CreateTaskRequest request) throws ServiceException {
-        final DownloadTask task = MetaManager.createDownloadTask(request);
-        allTasks.get(StateEnum.New).put(task.getId(), task);
-        final File metadataFile = new File(META_FOLDER + request.getFilename() + META_SUFFIX);
-        MetaManager.serializeForNewState(task, metadataFile);
-        try {
-            newTasksQueue.put(task);
-        } catch (InterruptedException e) {
-           throw new ServiceException("Meet the max workload. Please wait for several minutes and retry.");
+    public Integer[] pauseRunningTasks() {
+        ArrayList<Integer> ids = new ArrayList<Integer>();
+        Set<Entry<Integer, IDownloadProcess>> entrySet = activeProcesses.entrySet();
+        for ( Entry<Integer, IDownloadProcess> entry : entrySet ) {
+            pause(entry.getKey());
+            ids.add(entry.getKey().intValue());
         }
-        return task;
+        return ids.toArray(new Integer[ids.size()]);
+    }
+
+    private void scheduleInactiveTasks(DownloadTask[] tasks) {
+        for ( DownloadTask task : tasks ) {
+            IDownloadProcess proxy = createDownloadProcess(task);
+            proxy.activate();
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException ignored) {
+                LogUtils.error(DownloadEngine.class, ignored);
+            }
+            preparedDownloadProcessQueue.add(proxy);
+        }
+    }
+
+    private void scheduleNewTasks(DownloadTask[] newTasks) {
+        if ( null == newTasks || 0 >= newTasks.length ) {
+            return;
+        }
+        for ( DownloadTask task : newTasks ) {
+            newTasksQueue.add(task);
+        }
+    }
+
+    /***
+     * When engine started, some steps need to be done, including: 1. Create
+     * meta data folder if not exists, which stores information of download
+     * task; 2. Register engine as a state change listener; 3. Load all download
+     * tasks into ConcurrentHashMap allTasks; 4. Create and start prepare thread
+     * and dispatcher thread for handing download tasks 5. Fix corrupted state
+     * from active to inactive 6.Schedule new download task.
+     */
+    @Override
+    public void start() {
+        if ( isStarted() ) {
+            return;
+        }
+        MetaManager.initiateMetadataDirs();
+        StateChangeListenerHub.INSTANCE.registerListener(this);
+        loadAllTasks();
+        prepareThread = new Thread(new PreparedThread());
+        prepareThread.setName("Prepare Thread");
+        prepareThread.start();
+        dispatcherThread = new Thread(new DispatcherThread());
+        dispatcherThread.setName("Dispatcher Thread");
+        dispatcherThread.start();
+        // fix corrupted state from active to inactive
+        DownloadTask[] startedTasks = findByState(StateEnum.Started);
+        DownloadTask[] preparedTasks = findByState(StateEnum.Prepared);
+        DownloadTask[] newTasks = findByState(StateEnum.New);
+        fixCorrupttedTasks(startedTasks, StateEnum.InactiveStarted);
+        scheduleInactiveTasks(findByState(StateEnum.InactiveStarted));
+        fixCorrupttedTasks(preparedTasks, StateEnum.InactivePrepared);
+        scheduleInactiveTasks(findByState(StateEnum.InactivePrepared));
+        // Some tasks in the new blocking queue should be re-put in the queue.
+        scheduleNewTasks(newTasks);
+        // make sure all of the internal constructs of download engine started
+        // reschedule inactive tasks
+        started = true;
+    }
+
+    @Override
+    public synchronized void stop() {
+        if ( !isStarted() ) {
+            return;
+        }
+        pauseRunningTasks();
+        stopWorkingThread();
+        StateChangeListenerHub.INSTANCE.removeListener(this);
+        started = false;
+    }
+
+    private void stopWorkingThread() {
+        assert null != prepareThread;
+        prepareThread.interrupt();
+        assert null != dispatcherThread;
+        dispatcherThread.interrupt();
     }
 }

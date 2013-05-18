@@ -6,9 +6,9 @@ import java.lang.annotation.RetentionPolicy;
 @Retention(value = RetentionPolicy.RUNTIME)
 public @interface Option {
 
-    String shortName();
+    String description();
 
     String fullName();
 
-    String description();
+    String shortName();
 }

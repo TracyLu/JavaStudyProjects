@@ -29,52 +29,20 @@ public final class DownloadTask implements Serializable {
         this.fileName = filename;
     }
 
-    public int getId() {
-        return id;
-    }
-
-    public void setId(int id) {
-        this.id = id;
-    }
-
-    public URL getUrl() {
-        return url;
-    }
-
-    public void setUrl(URL url) {
-        this.url = url;
-    }
-
-    public URL getReferURL() {
-        return referURL;
-    }
-
-    public void setReferURL(URL referURL) {
-        this.referURL = referURL;
-    }
-
-    public File getFolder() {
-        return folder;
-    }
-
-    public void setFolder(File folder) {
-        this.folder = folder;
+    public void addSegment(DownloadSegment segment) {
+        this.segments.add(segment);
     }
 
     public String getFileName() {
         return fileName;
     }
 
-    public void setFileName(String fileName) {
-        this.fileName = fileName;
+    public File getFolder() {
+        return folder;
     }
 
-    public long getTotalLength() {
-        return totalLength;
-    }
-
-    public void setTotalLength(long totalLength) {
-        this.totalLength = totalLength;
+    public int getId() {
+        return id;
     }
 
     public long getReceivedBytes() {
@@ -91,44 +59,76 @@ public final class DownloadTask implements Serializable {
         return receivedBytes;
     }
 
-    public int getSegmentsNumber() {
-        return segmentsNumber;
-    }
-
-    public void setSegmentsNumber(int segmentsNumber) {
-        this.segmentsNumber = segmentsNumber;
-    }
-
-    public boolean isResumable() {
-        return resumable;
-    }
-
-    public void setResumable(boolean resumable) {
-        this.resumable = resumable;
-    }
-
-    public byte getThreadNumber() {
-        return threadNumber;
-    }
-
-    public void setThreadNumber(byte threadNumber) {
-        this.threadNumber = threadNumber;
-    }
-
-    public byte getState() {
-        return state;
-    }
-
-    public void setState(byte state) {
-        this.state = state;
+    public URL getReferURL() {
+        return referURL;
     }
 
     public List<DownloadSegment> getSegments() {
         return Collections.unmodifiableList(segments);
     }
 
-    public void addSegment(DownloadSegment segment) {
-        this.segments.add(segment);
+    public int getSegmentsNumber() {
+        return segmentsNumber;
+    }
+
+    public byte getState() {
+        return state;
+    }
+
+    public byte getThreadNumber() {
+        return threadNumber;
+    }
+
+    public long getTotalLength() {
+        return totalLength;
+    }
+
+    public URL getUrl() {
+        return url;
+    }
+
+    public boolean isResumable() {
+        return resumable;
+    }
+
+    public void setFileName(String fileName) {
+        this.fileName = fileName;
+    }
+
+    public void setFolder(File folder) {
+        this.folder = folder;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public void setReferURL(URL referURL) {
+        this.referURL = referURL;
+    }
+
+    public void setResumable(boolean resumable) {
+        this.resumable = resumable;
+    }
+
+    public void setSegmentsNumber(int segmentsNumber) {
+        this.segmentsNumber = segmentsNumber;
+    }
+
+    public void setState(byte state) {
+        this.state = state;
+    }
+
+    public void setThreadNumber(byte threadNumber) {
+        this.threadNumber = threadNumber;
+    }
+
+    public void setTotalLength(long totalLength) {
+        this.totalLength = totalLength;
+    }
+
+    public void setUrl(URL url) {
+        this.url = url;
     }
 
     @Override

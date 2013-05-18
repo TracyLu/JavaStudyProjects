@@ -18,25 +18,13 @@ public class PauseTaskService implements IService<PauseTaskRequest> {
     @SuppressWarnings("unused")
     private ITelnetClient client;
 
-    @Override
-    public void start() {
+    public PauseTaskRequest getRequest() {
+        return request;
     }
 
     @Override
     public boolean isStarted() {
         return false;
-    }
-
-    @Override
-    public void stop() {
-    }
-
-    public PauseTaskRequest getRequest() {
-        return request;
-    }
-
-    public void setRequest(PauseTaskRequest request) {
-        this.request = request;
     }
 
     @Override
@@ -51,5 +39,17 @@ public class PauseTaskService implements IService<PauseTaskRequest> {
     @Override
     public void setClient(ITelnetClient client) {
         this.client = client;
+    }
+
+    public void setRequest(PauseTaskRequest request) {
+        this.request = request;
+    }
+
+    @Override
+    public void start() {
+    }
+
+    @Override
+    public void stop() {
     }
 }

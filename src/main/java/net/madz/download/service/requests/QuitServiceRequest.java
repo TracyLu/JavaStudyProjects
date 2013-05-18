@@ -8,13 +8,13 @@ public class QuitServiceRequest implements IServiceRequest {
     String commandName;
     
     
-    public void setCommandName(String commandName) {
-        this.commandName = commandName;
-    }
-
     @Override
     public String getCommandName() {
         return commandName;
+    }
+
+    public void setCommandName(String commandName) {
+        this.commandName = commandName;
     }
 
     @Override

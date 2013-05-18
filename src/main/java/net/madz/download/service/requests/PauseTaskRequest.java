@@ -13,19 +13,19 @@ public class PauseTaskRequest implements IServiceRequest {
         return commandName;
     }
 
-    @Override
-    public void validate() throws ServiceException {
-    }
-
     public int getId() {
         return Integer.valueOf(id);
+    }
+
+    public void setCommandName(String commandName) {
+        this.commandName = commandName;
     }
 
     public void setId(String id) {
         this.id = id;
     }
 
-    public void setCommandName(String commandName) {
-        this.commandName = commandName;
+    @Override
+    public void validate() throws ServiceException {
     }
 }

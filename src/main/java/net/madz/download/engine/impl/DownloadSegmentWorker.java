@@ -29,6 +29,10 @@ public final class DownloadSegmentWorker implements Runnable {
         this.metadataFile = metadataFile;
     }
 
+    public boolean isPauseFlag() {
+        return this.process.isPaused();
+    }
+
     @Override
     public void run() {
         URL url = task.getUrl();
@@ -79,9 +83,5 @@ public final class DownloadSegmentWorker implements Runnable {
                 LogUtils.error(DownloadSegmentWorker.class, ignored);
             }
         }
-    }
-
-    public boolean isPauseFlag() {
-        return this.process.isPaused();
     }
 }

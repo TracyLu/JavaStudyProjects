@@ -17,6 +17,14 @@ import net.madz.download.utils.LogUtils;
 public class ServiceHub {
 
     private static ServiceHub serviceHub;
+    public static synchronized ServiceHub getInstance() {
+        if ( null != serviceHub ) {
+            return serviceHub;
+        }
+        serviceHub = new ServiceHub();
+        return serviceHub;
+    }
+
     private final HashMap<String, IService<? extends IServiceRequest>> servicesRegistry = new HashMap<String, IService<? extends IServiceRequest>>();
 
     private ServiceHub() {
@@ -34,14 +42,6 @@ public class ServiceHub {
                 LogUtils.error(ServiceHub.class, ignored);
             }
         }
-    }
-
-    public static synchronized ServiceHub getInstance() {
-        if ( null != serviceHub ) {
-            return serviceHub;
-        }
-        serviceHub = new ServiceHub();
-        return serviceHub;
     }
 
     public IService<?> getService(String commandName) {

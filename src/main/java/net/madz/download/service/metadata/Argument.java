@@ -6,8 +6,8 @@ public class Argument {
     private String shortName;
     private String description;
 
-    public void setName(String name) {
-        this.name = name;
+    public String getDescription() {
+        return description;
     }
 
     public String getName() {
@@ -18,15 +18,15 @@ public class Argument {
         return shortName;
     }
 
-    public void setShortName(String shortName) {
-        this.shortName = shortName;
-    }
-
     public void setDescription(String description) {
         this.description = description;
     }
 
-    public String getDescription() {
-        return description;
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public void setShortName(String shortName) {
+        this.shortName = shortName;
     }
 }

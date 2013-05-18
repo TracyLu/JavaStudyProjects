@@ -19,16 +19,14 @@ public class ResumeTaskService implements IService<ResumeTaskRequest> {
     private ITelnetClient client;
 
     @Override
-    public void start() {
-    }
-
-    @Override
     public boolean isStarted() {
         return false;
     }
 
     @Override
-    public void stop() {
+    public IServiceResponse processRequest(ResumeTaskRequest request) throws ServiceException {
+        DownloadEngine.getInstance().createDownloadProcess(request);
+        return new ResumeTaskResponse("You task is resumed to download.");
     }
 
     @Override
@@ -37,8 +35,10 @@ public class ResumeTaskService implements IService<ResumeTaskRequest> {
     }
 
     @Override
-    public IServiceResponse processRequest(ResumeTaskRequest request) throws ServiceException {
-        DownloadEngine.getInstance().createDownloadProcess(request);
-        return new ResumeTaskResponse("You task is resumed to download.");
+    public void start() {
+    }
+
+    @Override
+    public void stop() {
     }
 }

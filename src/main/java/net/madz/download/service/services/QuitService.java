@@ -18,18 +18,8 @@ public class QuitService implements IService<QuitServiceRequest> {
     private ITelnetClient client;
 
     @Override
-    public void start() {
-        started = true;
-    }
-
-    @Override
     public boolean isStarted() {
         return started;
-    }
-
-    @Override
-    public void stop() {
-        started = false;
     }
 
     @Override
@@ -44,5 +34,15 @@ public class QuitService implements IService<QuitServiceRequest> {
     @Override
     public void setClient(ITelnetClient client) {
         this.client = client;
+    }
+
+    @Override
+    public void start() {
+        started = true;
+    }
+
+    @Override
+    public void stop() {
+        started = false;
     }
 }

@@ -10,20 +10,20 @@ public class HelpRequest implements IServiceRequest {
     public HelpRequest() {
     }
 
-    public String getCommandName() {
-        return commandName;
-    }
-
-    public void setCommandName(String commandName) {
-        this.commandName = commandName;
-    }
-
     public String getArgCommandName() {
         return argCommandName;
     }
 
+    public String getCommandName() {
+        return commandName;
+    }
+
     public void setArgCommandName(String argCommandName) {
         this.argCommandName = argCommandName;
+    }
+
+    public void setCommandName(String commandName) {
+        this.commandName = commandName;
     }
 
     @Override

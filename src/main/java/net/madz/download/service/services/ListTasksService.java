@@ -25,16 +25,8 @@ public class ListTasksService implements IService<ListTasksRequest> {
     private ITelnetClient client;
 
     @Override
-    public void start() {
-    }
-
-    @Override
     public boolean isStarted() {
         return false;
-    }
-
-    @Override
-    public void stop() {
     }
 
     @Override
@@ -61,5 +53,13 @@ public class ListTasksService implements IService<ListTasksRequest> {
     @Override
     public void setClient(ITelnetClient client) {
         this.client = client;
+    }
+
+    @Override
+    public void start() {
+    }
+
+    @Override
+    public void stop() {
     }
 }

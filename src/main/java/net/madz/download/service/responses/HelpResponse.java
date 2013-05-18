@@ -11,12 +11,12 @@ public class HelpResponse implements IServiceResponse {
         return commandName;
     }
 
-    public void setCommandName(String commandName) {
-        this.commandName = commandName;
-    }
-
     public String getDescription() {
         return description;
+    }
+
+    public void setCommandName(String commandName) {
+        this.commandName = commandName;
     }
 
     public void setDescription(String description) {

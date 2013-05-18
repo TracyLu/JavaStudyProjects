@@ -17,39 +17,29 @@ public class DownloadSegment implements Serializable {
     private Byte state;
 
     
-    public int getId() {
-        return id;
+    public long getCurrentBytes() {
+        return currentBytes;
     }
 
-
-    
-    public void setId(int id) {
-        this.id = id;
-    }
-
-
-    public long getStartBytes() {
-        return startBytes;
-    }
-
-    
-    public void setStartBytes(long startBytes) {
-        this.startBytes = startBytes;
-    }
 
     
     public long getEndBytes() {
         return endBytes;
     }
 
-    
-    public void setEndBytes(long endBytes) {
-        this.endBytes = endBytes;
+
+    public int getId() {
+        return id;
     }
 
     
-    public long getCurrentBytes() {
-        return currentBytes;
+    public long getStartBytes() {
+        return startBytes;
+    }
+
+    
+    public Byte getState() {
+        return state;
     }
 
     
@@ -58,8 +48,18 @@ public class DownloadSegment implements Serializable {
     }
 
     
-    public Byte getState() {
-        return state;
+    public void setEndBytes(long endBytes) {
+        this.endBytes = endBytes;
+    }
+
+    
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    
+    public void setStartBytes(long startBytes) {
+        this.startBytes = startBytes;
     }
 
     

@@ -25,51 +25,6 @@ public class CreateTaskService implements IService<CreateTaskRequest> {
 
     private ITelnetClient client;
 
-    @Override
-    public void start() {
-        // TODO Auto-generated method stub
-    }
-
-    @Override
-    public boolean isStarted() {
-        // TODO Auto-generated method stub
-        return false;
-    }
-
-    @Override
-    public void stop() {
-        // TODO Auto-generated method stub
-    }
-
-    @Override
-    public IServiceResponse processRequest(CreateTaskRequest request) throws ServiceException {
-        if ( null == request || null == request.getUrl() ) {
-            throw new ServiceException("Create task request or URL should not be null.");
-        }
-        if ( isDownloaded(request) && !request.isReCreate() ) {
-            final String confirmation = "The task is finished. Do you want to create a new task? (Y:N): ";
-            String response = null;
-            do {
-                response = client.acquireConfirm(confirmation);
-            } while ( null == response || 0 >= response.length() );
-            if ( !"Y".equalsIgnoreCase(response) ) {
-                return new CreateTaskResponse("Request ignored.");
-            } else {
-                request.setFilename(getNewFileName(request.getFolder(), request.getFilename()));
-            }
-        } else if ( isDownloaded(request) && request.isReCreate() ) {
-            request.setFilename(getNewFileName(request.getFolder(), request.getFilename()));
-        }
-        DownloadTask task = DownloadEngine.getInstance().createDownloadTask(request);
-        return new CreateTaskResponse(String.valueOf(task.getId()));
-    }
-
-    private String getNewFileName(String folderName, String filename) {
-        String newName = null;
-        newName = generateNewName(folderName, filename, Arrays.asList(DownloadEngine.getInstance().listAllTasks()));
-        return newName;
-    }
-
     private String generateNewName(String folderName, String oldName, List<DownloadTask> tasks) {
         String newName = null;
         boolean match = false;
@@ -101,13 +56,58 @@ public class CreateTaskService implements IService<CreateTaskRequest> {
         return newName;
     }
 
+    private String getNewFileName(String folderName, String filename) {
+        String newName = null;
+        newName = generateNewName(folderName, filename, Arrays.asList(DownloadEngine.getInstance().listAllTasks()));
+        return newName;
+    }
+
     private boolean isDownloaded(CreateTaskRequest request) {
         final DownloadTask[] tasks = DownloadEngine.getInstance().findByUrl(request.getUrl());
         return tasks.length > 0;
     }
 
     @Override
+    public boolean isStarted() {
+        // TODO Auto-generated method stub
+        return false;
+    }
+
+    @Override
+    public IServiceResponse processRequest(CreateTaskRequest request) throws ServiceException {
+        if ( null == request || null == request.getUrl() ) {
+            throw new ServiceException("Create task request or URL should not be null.");
+        }
+        if ( isDownloaded(request) && !request.isReCreate() ) {
+            final String confirmation = "The task is finished. Do you want to create a new task? (Y:N): ";
+            String response = null;
+            do {
+                response = client.acquireConfirm(confirmation);
+            } while ( null == response || 0 >= response.length() );
+            if ( !"Y".equalsIgnoreCase(response) ) {
+                return new CreateTaskResponse("Request ignored.");
+            } else {
+                request.setFilename(getNewFileName(request.getFolder(), request.getFilename()));
+            }
+        } else if ( isDownloaded(request) && request.isReCreate() ) {
+            request.setFilename(getNewFileName(request.getFolder(), request.getFilename()));
+        }
+        DownloadTask task = DownloadEngine.getInstance().createDownloadTask(request);
+        return new CreateTaskResponse(String.valueOf(task.getId()));
+    }
+
+    @Override
     public void setClient(ITelnetClient client) {
         this.client = client;
+    }
+
+    @Override
+    public void start() {
+        // TODO Auto-generated method stub
+    }
+
+    @Override
+    public void stop() {
+        // TODO Auto-generated method stub
     }
 }

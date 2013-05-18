@@ -10,27 +10,27 @@ public class RawCommand {
     private List<String> options = new LinkedList<String>();
     private List<String> args = new LinkedList<String>();
 
-    public void setName(String name) {
-        this.name = name;
+    public void addArg(String arg) {
+        this.args.add(arg);
     }
 
     public void addOption(String option) {
         options.add(option);
     }
 
-    public List<String> getOptions() {
-        return Collections.unmodifiableList(options);
+    public List<String> getArgs() {
+        return Collections.unmodifiableList(args);
     }
 
     public String getName() {
         return name;
     }
 
-    public List<String> getArgs() {
-        return Collections.unmodifiableList(args);
+    public List<String> getOptions() {
+        return Collections.unmodifiableList(options);
     }
 
-    public void addArg(String arg) {
-        this.args.add(arg);
+    public void setName(String name) {
+        this.name = name;
     }
 }

@@ -14,21 +14,12 @@ public class IdFactory implements Serializable {
     private static final File file = new File("./id.meta");
     private static final IdFactory instance = new IdFactory();
     private static final int MAX_ID_NUMBER = 50;
-    private int topNumber = 0;
-    private volatile int count = 0;
-
     public static synchronized IdFactory getInstance() {
         return instance;
     }
+    private int topNumber = 0;
 
-    public synchronized int getId() {
-        if ( 0 == count || count >= MAX_ID_NUMBER ) {
-            topNumber = generate();
-            count = 0;
-        }
-        count++;
-        return topNumber - MAX_ID_NUMBER + count;
-    }
+    private volatile int count = 0;
 
     private IdFactory() {
         RandomAccessFile raf = null;
@@ -72,5 +63,14 @@ public class IdFactory implements Serializable {
             }
         }
         return topNumber;
+    }
+
+    public synchronized int getId() {
+        if ( 0 == count || count >= MAX_ID_NUMBER ) {
+            topNumber = generate();
+            count = 0;
+        }
+        count++;
+        return topNumber - MAX_ID_NUMBER + count;
     }
 }

@@ -22,56 +22,56 @@ public final class CreateTaskRequest implements IServiceRequest {
         return commandName;
     }
 
-    public void setCommandName(String commandName) {
-        this.commandName = commandName;
-    }
-
-    public String getUrl() {
-        return url;
-    }
-
-    public void setUrl(String url) {
-        this.url = url;
-    }
-
-    public String getReferURL() {
-        return referURL;
-    }
-
-    public void setReferURL(String referURL) {
-        this.referURL = referURL;
+    public String getFilename() {
+        return filename;
     }
 
     public String getFolder() {
         return folder;
     }
 
-    public void setFolder(String folder) {
-        this.folder = folder;
-    }
-
-    public String getFilename() {
-        return filename;
-    }
-
-    public void setFilename(String filename) {
-        this.filename = filename;
+    public String getReferURL() {
+        return referURL;
     }
 
     public int getThreadNumber() {
         return threadNumber;
     }
 
-    public void setThreadNumber(int threadNumber) {
-        this.threadNumber = threadNumber;
+    public String getUrl() {
+        return url;
     }
-    
+
     public boolean isReCreate() {
         return reCreate;
     }
 
+    public void setCommandName(String commandName) {
+        this.commandName = commandName;
+    }
+
+    public void setFilename(String filename) {
+        this.filename = filename;
+    }
+
+    public void setFolder(String folder) {
+        this.folder = folder;
+    }
+
     public void setReCreate(boolean reCreate) {
         this.reCreate = reCreate;
+    }
+
+    public void setReferURL(String referURL) {
+        this.referURL = referURL;
+    }
+    
+    public void setThreadNumber(int threadNumber) {
+        this.threadNumber = threadNumber;
+    }
+
+    public void setUrl(String url) {
+        this.url = url;
     }
 
     @Override

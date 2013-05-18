@@ -12,6 +12,10 @@ public class EchoRequest implements IServiceRequest {
         super();
     }
 
+    public String getCommandName() {
+        return commandName;
+    }
+
     public String getMessage() {
         return message;
     }
@@ -20,20 +24,16 @@ public class EchoRequest implements IServiceRequest {
         return lowerCase;
     }
 
-    public void setLowerCase(boolean lowerCase) {
-        this.lowerCase = lowerCase;
+    public void setCommandName(String commandName) {
+        this.commandName = commandName;
     }
 
     public void setL(boolean l) {
         this.lowerCase = l;
     }
 
-    public String getCommandName() {
-        return commandName;
-    }
-
-    public void setCommandName(String commandName) {
-        this.commandName = commandName;
+    public void setLowerCase(boolean lowerCase) {
+        this.lowerCase = lowerCase;
     }
 
     public void setMessage(String message) {

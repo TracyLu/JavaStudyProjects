@@ -34,6 +34,57 @@ public class DownloadProcess implements IDownloadProcess {
         this.receiveBytes = this.task.getReceivedBytes();
     }
 
+    @Override
+    public void activate() {
+        if ( (byte) StateEnum.InactiveStarted.ordinal() == task.getState() ) {
+            for ( DownloadSegment segment : task.getSegments() ) {
+                if ( segment.getState() == StateEnum.InactiveStarted.ordinal() ) {
+                    segment.setState((byte) StateEnum.Prepared.ordinal());
+                }
+            }
+        } else if ( (byte) StateEnum.InactivePrepared.ordinal() == task.getState() ) {
+            for ( DownloadSegment segment : task.getSegments() ) {
+                if ( segment.getState() == StateEnum.InactivePrepared.ordinal() ) {
+                    segment.setState((byte) StateEnum.Prepared.ordinal());
+                }
+            }
+        }
+        File folder = task.getFolder();
+        dataFile = new File(folder, task.getFileName());
+    }
+
+    @Override
+    public void err() {
+        task.setState((byte) StateEnum.Failed.ordinal());
+        this.receiveUpdateExecutor.shutdown();
+        this.localThreadPool.shutdown();
+    }
+
+    @Override
+    public void finish() {
+        this.receiveUpdateExecutor.shutdown();
+        this.localThreadPool.shutdown();
+    }
+
+    @Override
+    public File getDataFile() {
+        return dataFile;
+    }
+
+    @Override
+    public int getId() {
+        return this.task.getId();
+    }
+
+    @Override
+    public File getMetadataFile() {
+        return metadataFile;
+    }
+
+    public synchronized long getReceiveBytes() {
+        return receiveBytes;
+    }
+
     @SuppressWarnings("unchecked")
     @Override
     public StateEnum getState() {
@@ -42,57 +93,13 @@ public class DownloadProcess implements IDownloadProcess {
         return states[stateIndex];
     }
 
-    void setState(StateEnum state) throws FileNotFoundException, IOException {
-        this.task.setState((byte) state.ordinal());
-        MetaManager.updateTaskState(metadataFile, state);
+    public synchronized DownloadTask getTask() {
+        return task;
     }
 
     @Override
-    public void prepare() {
-        MetaManager.serializeForPreparedState(task, metadataFile);
-        MetaManager.computeSegmentsInformation(task);
-        MetaManager.serializeSegmentsInformation(task, metadataFile);
-        File folder = task.getFolder();
-        dataFile = new File(folder, task.getFileName());
-        try {
-            dataFile.createNewFile();
-        } catch (IOException ignored) {
-            LogUtils.error(DownloadProcess.class, ignored);
-        }
-    }
-
-    @Override
-    public void start() {
-        final List<DownloadSegment> segments = task.getSegments();
-        localThreadPool = Executors.newFixedThreadPool(task.getThreadNumber());
-        for ( final DownloadSegment segment : segments ) {
-            if ( pauseFlag ) {
-                break;
-            }
-            if ( segment.getCurrentBytes() < segment.getEndBytes() ) {
-                DownloadSegmentWorker worker = DownloadEngine.getInstance().createSegmentWorker(this, task, segment);
-                workers.add(worker);
-                localThreadPool.submit(worker);
-            }
-        }
-    }
-
-    @Override
-    public void receive(final long bytes) {
-        receiveUpdateExecutor.submit(new Runnable() {
-
-            @Override
-            public void run() {
-                System.out.println("orignal bytes:" + DownloadProcess.this.receiveBytes);
-                DownloadProcess.this.receiveBytes += bytes;
-                System.out.println("Received bytes:" + bytes + " Total Length:" + task.getTotalLength());
-                synchronized (DownloadProcess.this) {
-                    if ( receiveBytes == task.getTotalLength() ) {
-                        DownloadProcess.this.notify();
-                    }
-                }
-            }
-        });
+    public long getTotalLength() {
+        return this.task.getTotalLength();
     }
 
     @Override
@@ -113,35 +120,9 @@ public class DownloadProcess implements IDownloadProcess {
         }
     }
 
-    private void resetProcessWhenNotResumable() {
-        if ( !task.isResumable() ) {
-            try {
-                MetaManager.updateSegmentDownloadProgress(metadataFile, 0, 0);
-            } catch (FileNotFoundException ignored) {
-                LogUtils.error(DownloadProcess.class, ignored);
-            } catch (IOException ignored) {
-                LogUtils.error(DownloadProcess.class, ignored);
-            }
-        }
-    }
-
     @Override
-    public void activate() {
-        if ( (byte) StateEnum.InactiveStarted.ordinal() == task.getState() ) {
-            for ( DownloadSegment segment : task.getSegments() ) {
-                if ( segment.getState() == StateEnum.InactiveStarted.ordinal() ) {
-                    segment.setState((byte) StateEnum.Prepared.ordinal());
-                }
-            }
-        } else if ( (byte) StateEnum.InactivePrepared.ordinal() == task.getState() ) {
-            for ( DownloadSegment segment : task.getSegments() ) {
-                if ( segment.getState() == StateEnum.InactivePrepared.ordinal() ) {
-                    segment.setState((byte) StateEnum.Prepared.ordinal());
-                }
-            }
-        }
-        File folder = task.getFolder();
-        dataFile = new File(folder, task.getFileName());
+    public boolean isPaused() {
+        return pauseFlag;
     }
 
     @Override
@@ -168,16 +149,35 @@ public class DownloadProcess implements IDownloadProcess {
     }
 
     @Override
-    public void finish() {
-        this.receiveUpdateExecutor.shutdown();
-        this.localThreadPool.shutdown();
+    public void prepare() {
+        MetaManager.serializeForPreparedState(task, metadataFile);
+        MetaManager.computeSegmentsInformation(task);
+        MetaManager.serializeSegmentsInformation(task, metadataFile);
+        File folder = task.getFolder();
+        dataFile = new File(folder, task.getFileName());
+        try {
+            dataFile.createNewFile();
+        } catch (IOException ignored) {
+            LogUtils.error(DownloadProcess.class, ignored);
+        }
     }
 
     @Override
-    public void err() {
-        task.setState((byte) StateEnum.Failed.ordinal());
-        this.receiveUpdateExecutor.shutdown();
-        this.localThreadPool.shutdown();
+    public void receive(final long bytes) {
+        receiveUpdateExecutor.submit(new Runnable() {
+
+            @Override
+            public void run() {
+                System.out.println("orignal bytes:" + DownloadProcess.this.receiveBytes);
+                DownloadProcess.this.receiveBytes += bytes;
+                System.out.println("Received bytes:" + bytes + " Total Length:" + task.getTotalLength());
+                synchronized (DownloadProcess.this) {
+                    if ( receiveBytes == task.getTotalLength() ) {
+                        DownloadProcess.this.notify();
+                    }
+                }
+            }
+        });
     }
 
     @Override
@@ -185,6 +185,22 @@ public class DownloadProcess implements IDownloadProcess {
         receiveUpdateExecutor.shutdown();
         FileUtils.delete(dataFile);
         FileUtils.delete(metadataFile);
+    }
+
+    /***
+     * The method is responsible for reseting download process of non-resumable
+     * task to start point.
+     */
+    private void resetProcessWhenNotResumable() {
+        if ( !task.isResumable() ) {
+            try {
+                MetaManager.updateSegmentDownloadProgress(metadataFile, 0, 0);
+            } catch (FileNotFoundException ignored) {
+                LogUtils.error(DownloadProcess.class, ignored);
+            } catch (IOException ignored) {
+                LogUtils.error(DownloadProcess.class, ignored);
+            }
+        }
     }
 
     @Override
@@ -205,36 +221,24 @@ public class DownloadProcess implements IDownloadProcess {
         dataFile = new File(folder, task.getFileName());
     }
 
-    public synchronized long getReceiveBytes() {
-        return receiveBytes;
-    }
-
-    public synchronized DownloadTask getTask() {
-        return task;
+    void setState(StateEnum state) throws FileNotFoundException, IOException {
+        this.task.setState((byte) state.ordinal());
+        MetaManager.updateTaskState(metadataFile, state);
     }
 
     @Override
-    public int getId() {
-        return this.task.getId();
-    }
-
-    @Override
-    public boolean isPaused() {
-        return pauseFlag;
-    }
-
-    @Override
-    public File getMetadataFile() {
-        return metadataFile;
-    }
-
-    @Override
-    public File getDataFile() {
-        return dataFile;
-    }
-
-    @Override
-    public long getTotalLength() {
-        return this.task.getTotalLength();
+    public void start() {
+        final List<DownloadSegment> segments = task.getSegments();
+        localThreadPool = Executors.newFixedThreadPool(task.getThreadNumber());
+        for ( final DownloadSegment segment : segments ) {
+            if ( pauseFlag ) {
+                break;
+            }
+            if ( segment.getCurrentBytes() < segment.getEndBytes() ) {
+                DownloadSegmentWorker worker = DownloadEngine.getInstance().createSegmentWorker(this, task, segment);
+                workers.add(worker);
+                localThreadPool.submit(worker);
+            }
+        }
     }
 }

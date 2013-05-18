@@ -40,23 +40,6 @@ import net.madz.download.engine.IDownloadProcess.TransitionEnum;
 @StateMachine(states = @StateSet(StateEnum.class), transitions = @TransitionSet(TransitionEnum.class))
 public interface IDownloadProcess extends Serializable, IReactiveObject {
 
-    public static enum TransitionEnum implements ITransition {
-        Prepare,
-        Start,
-        Receive,
-        @Corrupt
-        Inactivate,
-        @Recover
-        Activate,
-        Pause,
-        Finish,
-        Err,
-        Remove,
-        @Redo
-        Restart,
-        Resume
-    }
-
     public static enum StateEnum implements IState<IDownloadProcess, StateEnum> {
         /**
          * Preconditions: 
@@ -292,39 +275,65 @@ public interface IDownloadProcess extends Serializable, IReactiveObject {
         final HashMap<TransitionEnum, StateEnum> transitionFunction = new HashMap<TransitionEnum, StateEnum>();
 
         @Override
-        public Map<? extends ITransition, StateEnum> getTransitionFunction() {
-            return Collections.unmodifiableMap(transitionFunction);
-        }
-
-        @Override
         public Set<? extends ITransition> getOutboundTransitions() {
             return transitionFunction.keySet();
         }
+
+        @Override
+        public Map<? extends ITransition, StateEnum> getTransitionFunction() {
+            return Collections.unmodifiableMap(transitionFunction);
+        }
     }
 
-    @Transition
-    void prepare();
-
-    @Transition
-    void start();
-
-    @Transition
-    void receive(long bytes);
-
-    @Transition
-    void inactivate();
+    public static enum TransitionEnum implements ITransition {
+        Prepare,
+        Start,
+        Receive,
+        @Corrupt
+        Inactivate,
+        @Recover
+        Activate,
+        Pause,
+        Finish,
+        Err,
+        Remove,
+        @Redo
+        Restart,
+        Resume
+    }
 
     @Transition
     void activate();
 
     @Transition
-    void pause();
+    void err();
 
     @Transition
     void finish();
 
+    File getDataFile();
+
+    int getId();
+
+    File getMetadataFile();
+
+    long getReceiveBytes();
+
+    long getTotalLength();
+
     @Transition
-    void err();
+    void inactivate();
+
+    boolean isPaused();
+
+    @Transition
+    void pause();
+    
+    @Transition
+    void prepare();
+
+    @Transition
+    void receive(long bytes);
 
     @Transition
     void remove(boolean both);
@@ -334,17 +343,8 @@ public interface IDownloadProcess extends Serializable, IReactiveObject {
 
     @Transition
     void resume();
-    
-    int getId();
 
-    boolean isPaused();
-
-    File getDataFile();
-
-    File getMetadataFile();
-
-    long getReceiveBytes();
-
-    long getTotalLength();
+    @Transition
+    void start();
 
 }

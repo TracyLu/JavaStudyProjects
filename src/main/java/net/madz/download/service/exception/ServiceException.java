@@ -6,15 +6,15 @@ public class ServiceException extends Exception {
     
     private String message;
 
+    public ServiceException(String message) {
+        setMessage(message);
+    }
+
     public String getMessage() {
         return message;
     }
 
     public void setMessage(String message) {
         this.message = message;
-    }
-
-    public ServiceException(String message) {
-        setMessage(message);
     }
 }

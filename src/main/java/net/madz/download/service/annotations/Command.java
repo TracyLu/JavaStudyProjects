@@ -15,14 +15,14 @@ import net.madz.download.service.IServiceRequest;
 @Retention(value = RetentionPolicy.RUNTIME)
 public @interface Command {
 
-    String commandName();
-
-    Class<? extends IServiceRequest> request();
-
     // Must be in order.
     Arg[] arguments();
 
-    Option[] options();
+    String commandName();
 
     String description() default "";
+
+    Option[] options();
+
+    Class<? extends IServiceRequest> request();
 }

@@ -25,28 +25,52 @@ public class MetaManager {
 
     public static HashMap<URL, DownloadTask> allTasks = new HashMap<URL, DownloadTask>();
 
-    public static void serializeForPreparedState(DownloadTask task, File file) {
-        RandomAccessFile randomAccessFile = null;
-        try {
-            randomAccessFile = new RandomAccessFile(file, "rw");
-            randomAccessFile.seek(MetadataConsts.TOTAL_LENGTH_POSITION);
-            randomAccessFile.writeLong(task.getTotalLength());
-            randomAccessFile.seek(MetadataConsts.SEGMENTS_NUMBER_POSITION);
-            randomAccessFile.writeInt(task.getSegmentsNumber());
-            randomAccessFile.seek(MetadataConsts.RESUMABLE_FLAG_POSITION);
-            randomAccessFile.writeBoolean(task.isResumable());
-        } catch (FileNotFoundException e) {
-            throw new IllegalStateException(e);
-        } catch (IOException e) {
-            throw new IllegalStateException(e);
-        } finally {
-            try {
-                if ( null != randomAccessFile ) {
-                    randomAccessFile.close();
-                }
-            } catch (IOException ignored) {
-                LogUtils.error(MetaManager.class, ignored);
+    public static boolean checkResumable(URL url) throws IOException {
+        boolean resumable = false;
+        final HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+        conn.setRequestProperty("RANGE", "bytes=" + 0 + "-" + 0);
+        conn.connect();
+        final int statusCode = conn.getResponseCode();
+        if ( 206 == statusCode ) {
+            resumable = true;
+            return resumable;
+        }
+        final String acceptRanges = conn.getHeaderField("Accept-Ranges");
+        if ( "bytes".equalsIgnoreCase(acceptRanges) ) {
+            resumable = true;
+        } else {
+            System.out.println("Accept-Ranges" + acceptRanges);
+        }
+        return resumable;
+    }
+
+    public static void computeSegmentsInformation(DownloadTask task) {
+        int segmentsNumber = task.getSegmentsNumber();
+        long partLength = 0L;
+        long totalLength = task.getTotalLength();
+        partLength = totalLength / segmentsNumber;
+        for ( int i = 0; i < segmentsNumber; i++ ) {
+            DownloadSegment segment = new DownloadSegment();
+            segment.setId(i);
+            final int seq = i;
+            final long finalPartLength = partLength;
+            if ( i < segmentsNumber - 1 ) {
+                segment.setStartBytes(finalPartLength * seq);
+                segment.setEndBytes(finalPartLength * ( seq + 1 ) - 1);
+                segment.setCurrentBytes(finalPartLength * seq);
+                System.out.println("segment id:" + i);
+                System.out.println("segment start bytes:" + segment.getStartBytes());
+                System.out.println("segment end bytes:" + segment.getEndBytes());
+            } else {
+                final long finalTotalLength = totalLength;
+                segment.setStartBytes(finalPartLength * seq);
+                segment.setCurrentBytes(finalPartLength * seq);
+                segment.setEndBytes(finalTotalLength - 1);
+                System.out.println("segment id:" + i);
+                System.out.println("segment start bytes:" + segment.getStartBytes());
+                System.out.println("segment end bytes:" + segment.getEndBytes());
             }
+            task.addSegment(segment);
         }
     }
 
@@ -79,17 +103,11 @@ public class MetaManager {
         return task;
     }
 
-    public static long getTotalLength(URL url) throws ServiceException {
-        URLConnection openConnection = null;
-        int totalLength = 0;
-        try {
-            openConnection = url.openConnection();
-            openConnection.connect();
-            totalLength = openConnection.getContentLength();
-        } catch (IOException e) {
-            throw new ServiceException("Failed to connect to " + url.toString() + ". Please check your network.");
+    private static void createFolder(String path) {
+        File folder = new File(path);
+        if ( !folder.exists() ) {
+            folder.mkdir();
         }
-        return totalLength;
     }
 
     public static DownloadTask deserializeHeadInformation(File file) {
@@ -216,45 +234,6 @@ public class MetaManager {
         return task;
     }
 
-    public static boolean checkResumable(URL url) throws IOException {
-        boolean resumable = false;
-        final HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-        conn.setRequestProperty("RANGE", "bytes=" + 0 + "-" + 0);
-        conn.connect();
-        final int statusCode = conn.getResponseCode();
-        if ( 206 == statusCode ) {
-            resumable = true;
-            return resumable;
-        }
-        final String acceptRanges = conn.getHeaderField("Accept-Ranges");
-        if ( "bytes".equalsIgnoreCase(acceptRanges) ) {
-            resumable = true;
-        } else {
-            System.out.println("Accept-Ranges" + acceptRanges);
-        }
-        return resumable;
-    }
-
-    public static void updateTaskState(DownloadTask task, File logFile) {
-        RandomAccessFile raf = null;
-        try {
-            raf = new RandomAccessFile(logFile, "rw");
-            raf.seek(MetadataConsts.STATE_POSTION);
-            raf.writeByte(task.getState());
-        } catch (Exception e) {
-            LogUtils.error(MetaManager.class, e); // ignored the exception
-        } finally {
-            if ( null != raf ) {
-                try {
-                    raf.close();
-                } catch (IOException ignored) {
-                    LogUtils.error(MetaManager.class, ignored); // ignored the
-                                                                // exception
-                }
-            }
-        }
-    }
-
     public static void deserializeSegmentsInformation(DownloadTask task, File logFile) throws ServiceException {
         int segments = task.getSegmentsNumber();
         StringBuilder segmentsInformation = new StringBuilder();
@@ -322,6 +301,78 @@ public class MetaManager {
         System.out.println("Segements Information:" + segmentsInformation.toString());
     }
 
+    public static long getTotalLength(URL url) throws ServiceException {
+        URLConnection openConnection = null;
+        int totalLength = 0;
+        try {
+            openConnection = url.openConnection();
+            openConnection.connect();
+            totalLength = openConnection.getContentLength();
+        } catch (IOException e) {
+            throw new ServiceException("Failed to connect to " + url.toString() + ". Please check your network.");
+        }
+        return totalLength;
+    }
+
+    public static void initiateMetadataDirs() {
+        createFolder("./meta");
+    }
+
+    /***
+     * This method deserializes download tasks from meta information.
+     * 
+     * @param root
+     * @return DownloadTask[]
+     */
+    public synchronized static DownloadTask[] load(String root) {
+        final List<DownloadTask> results = new LinkedList<DownloadTask>();
+        List<File> files = new LinkedList<File>();
+        files = parseFolder(files, new File(root));
+        for ( File file : files ) {
+            final DownloadTask task = MetaManager.deserializeHeadInformation(file);
+            try {
+                MetaManager.deserializeSegmentsInformation(task, file);
+            } catch (ServiceException ignored) {
+                LogUtils.error(MetaManager.class, ignored);
+            }
+            results.add(task);
+        }
+        return results.toArray(new DownloadTask[results.size()]);
+    }
+
+    public synchronized static DownloadTask load(String root, int taskId) {
+        DownloadTask result = null;
+        List<File> files = new LinkedList<File>();
+        files = parseFolder(files, new File(root));
+        for ( File file : files ) {
+            DownloadTask task = MetaManager.deserializeHeadInformation(file);
+            try {
+                MetaManager.deserializeSegmentsInformation(task, file);
+            } catch (ServiceException ignored) {
+                LogUtils.error(MetaManager.class, ignored);
+            }
+            if ( taskId == task.getId() ) {
+                result = task;
+            }
+        }
+        return result;
+    }
+
+    private static List<File> parseFolder(List<File> result, File root) {
+        File[] listFiles = root.listFiles();
+        if ( null == listFiles ) {
+            return null;
+        }
+        for ( File file : listFiles ) {
+            if ( file.isFile() && file.getName().contains(DownloadEngine.META_SUFFIX) ) {
+                result.add(file);
+            } else {
+                parseFolder(result, file);
+            }
+        }
+        return result;
+    }
+
     public static void serializeForNewState(DownloadTask task, File file) {
         RandomAccessFile randomAccessFile = null;
         try {
@@ -381,6 +432,31 @@ public class MetaManager {
         }
     }
 
+    public static void serializeForPreparedState(DownloadTask task, File file) {
+        RandomAccessFile randomAccessFile = null;
+        try {
+            randomAccessFile = new RandomAccessFile(file, "rw");
+            randomAccessFile.seek(MetadataConsts.TOTAL_LENGTH_POSITION);
+            randomAccessFile.writeLong(task.getTotalLength());
+            randomAccessFile.seek(MetadataConsts.SEGMENTS_NUMBER_POSITION);
+            randomAccessFile.writeInt(task.getSegmentsNumber());
+            randomAccessFile.seek(MetadataConsts.RESUMABLE_FLAG_POSITION);
+            randomAccessFile.writeBoolean(task.isResumable());
+        } catch (FileNotFoundException e) {
+            throw new IllegalStateException(e);
+        } catch (IOException e) {
+            throw new IllegalStateException(e);
+        } finally {
+            try {
+                if ( null != randomAccessFile ) {
+                    randomAccessFile.close();
+                }
+            } catch (IOException ignored) {
+                LogUtils.error(MetaManager.class, ignored);
+            }
+        }
+    }
+
     public static void serializeSegmentsInformation(DownloadTask task, File metadataFile) {
         RandomAccessFile raf = null;
         try {
@@ -410,49 +486,6 @@ public class MetaManager {
                 } catch (IOException ignored) {
                     LogUtils.error(MetaManager.class, ignored);
                 }
-            }
-        }
-    }
-
-    public static void computeSegmentsInformation(DownloadTask task) {
-        int segmentsNumber = task.getSegmentsNumber();
-        long partLength = 0L;
-        long totalLength = task.getTotalLength();
-        partLength = totalLength / segmentsNumber;
-        for ( int i = 0; i < segmentsNumber; i++ ) {
-            DownloadSegment segment = new DownloadSegment();
-            segment.setId(i);
-            final int seq = i;
-            final long finalPartLength = partLength;
-            if ( i < segmentsNumber - 1 ) {
-                segment.setStartBytes(finalPartLength * seq);
-                segment.setEndBytes(finalPartLength * ( seq + 1 ) - 1);
-                segment.setCurrentBytes(finalPartLength * seq);
-                System.out.println("segment id:" + i);
-                System.out.println("segment start bytes:" + segment.getStartBytes());
-                System.out.println("segment end bytes:" + segment.getEndBytes());
-            } else {
-                final long finalTotalLength = totalLength;
-                segment.setStartBytes(finalPartLength * seq);
-                segment.setCurrentBytes(finalPartLength * seq);
-                segment.setEndBytes(finalTotalLength - 1);
-                System.out.println("segment id:" + i);
-                System.out.println("segment start bytes:" + segment.getStartBytes());
-                System.out.println("segment end bytes:" + segment.getEndBytes());
-            }
-            task.addSegment(segment);
-        }
-    }
-
-    public static void updateTaskState(File metadataFile, StateEnum state) throws FileNotFoundException, IOException {
-        RandomAccessFile raf = null;
-        try {
-            raf = new RandomAccessFile(metadataFile, "rw");
-            raf.seek(MetadataConsts.STATE_POSTION);
-            raf.writeByte(state.ordinal());
-        } finally {
-            if ( null != raf ) {
-                raf.close();
             }
         }
     }
@@ -490,72 +523,6 @@ public class MetaManager {
         }
     }
 
-    public static void initiateMetadataDirs() {
-        createFolder("./meta");
-    }
-
-    private static void createFolder(String path) {
-        File folder = new File(path);
-        if ( !folder.exists() ) {
-            folder.mkdir();
-        }
-    }
-
-    /***
-     * This method deserializes download tasks from meta information.
-     * 
-     * @param root
-     * @return DownloadTask[]
-     */
-    public synchronized static DownloadTask[] load(String root) {
-        final List<DownloadTask> results = new LinkedList<DownloadTask>();
-        List<File> files = new LinkedList<File>();
-        files = parseFolder(files, new File(root));
-        for ( File file : files ) {
-            final DownloadTask task = MetaManager.deserializeHeadInformation(file);
-            try {
-                MetaManager.deserializeSegmentsInformation(task, file);
-            } catch (ServiceException ignored) {
-                LogUtils.error(MetaManager.class, ignored);
-            }
-            results.add(task);
-        }
-        return results.toArray(new DownloadTask[results.size()]);
-    }
-
-    public synchronized static DownloadTask load(String root, int taskId) {
-        DownloadTask result = null;
-        List<File> files = new LinkedList<File>();
-        files = parseFolder(files, new File(root));
-        for ( File file : files ) {
-            DownloadTask task = MetaManager.deserializeHeadInformation(file);
-            try {
-                MetaManager.deserializeSegmentsInformation(task, file);
-            } catch (ServiceException ignored) {
-                LogUtils.error(MetaManager.class, ignored);
-            }
-            if ( taskId == task.getId() ) {
-                result = task;
-            }
-        }
-        return result;
-    }
-
-    private static List<File> parseFolder(List<File> result, File root) {
-        File[] listFiles = root.listFiles();
-        if ( null == listFiles ) {
-            return null;
-        }
-        for ( File file : listFiles ) {
-            if ( file.isFile() && file.getName().contains(DownloadEngine.META_SUFFIX) ) {
-                result.add(file);
-            } else {
-                parseFolder(result, file);
-            }
-        }
-        return result;
-    }
-
     public static void updateSegmentState(File metadataFile, DownloadTask task, StateEnum state) throws FileNotFoundException, IOException {
         RandomAccessFile raf = null;
         List<DownloadSegment> segments = task.getSegments();
@@ -581,6 +548,39 @@ public class MetaManager {
                     segments.get(i).setState((byte) state.ordinal());
                 }
             }
+        } finally {
+            if ( null != raf ) {
+                raf.close();
+            }
+        }
+    }
+
+    public static void updateTaskState(DownloadTask task, File logFile) {
+        RandomAccessFile raf = null;
+        try {
+            raf = new RandomAccessFile(logFile, "rw");
+            raf.seek(MetadataConsts.STATE_POSTION);
+            raf.writeByte(task.getState());
+        } catch (Exception e) {
+            LogUtils.error(MetaManager.class, e); // ignored the exception
+        } finally {
+            if ( null != raf ) {
+                try {
+                    raf.close();
+                } catch (IOException ignored) {
+                    LogUtils.error(MetaManager.class, ignored); // ignored the
+                                                                // exception
+                }
+            }
+        }
+    }
+
+    public static void updateTaskState(File metadataFile, StateEnum state) throws FileNotFoundException, IOException {
+        RandomAccessFile raf = null;
+        try {
+            raf = new RandomAccessFile(metadataFile, "rw");
+            raf.seek(MetadataConsts.STATE_POSTION);
+            raf.writeByte(state.ordinal());
         } finally {
             if ( null != raf ) {
                 raf.close();

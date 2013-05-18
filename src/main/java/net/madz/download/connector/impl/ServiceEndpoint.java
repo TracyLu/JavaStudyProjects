@@ -15,14 +15,31 @@ public class ServiceEndpoint implements IServiceEndpoint {
     private boolean started = false;
     private Thread workingThread = null;
     private static ServiceEndpoint endpoint = new ServiceEndpoint();
+    public static ServiceEndpoint getInstance() {
+        return endpoint;
+    }
+
     private ServerSocket server;
 
     private ServiceEndpoint() {
         super();
     }
 
-    public static ServiceEndpoint getInstance() {
-        return endpoint;
+    @SuppressWarnings("rawtypes")
+    @Override
+    public ITelnetClient createClient(Socket socket) {
+        ITelnetClient client = null;
+        try {
+            client = new TelnetClient(socket);
+        } catch (IOException ignored) {
+            LogUtils.error(ServiceEndpoint.class, ignored);
+        }
+        return client;
+    }
+
+    @Override
+    public synchronized boolean isStarted() {
+        return started;
     }
 
     @Override
@@ -75,11 +92,6 @@ public class ServiceEndpoint implements IServiceEndpoint {
     }
 
     @Override
-    public synchronized boolean isStarted() {
-        return started;
-    }
-
-    @Override
     public synchronized void stop() {
         if ( !isStarted() ) {
             throw new IllegalStateException(MessageConsts.SERVICE_IS_NOT_STARTED);
@@ -98,17 +110,5 @@ public class ServiceEndpoint implements IServiceEndpoint {
         } catch (InterruptedException ignored) {
             LogUtils.error(ServiceEndpoint.class, ignored);
         }
-    }
-
-    @SuppressWarnings("rawtypes")
-    @Override
-    public ITelnetClient createClient(Socket socket) {
-        ITelnetClient client = null;
-        try {
-            client = new TelnetClient(socket);
-        } catch (IOException ignored) {
-            LogUtils.error(ServiceEndpoint.class, ignored);
-        }
-        return client;
     }
 }

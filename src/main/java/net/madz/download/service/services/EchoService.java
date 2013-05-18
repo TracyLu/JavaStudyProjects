@@ -18,18 +18,8 @@ public class EchoService implements IService<IServiceRequest> {
     private ITelnetClient client;
 
     @Override
-    public void start() {
-        // TODO Auto-generated method stub
-    }
-
-    @Override
     public boolean isStarted() {
         return true;
-    }
-
-    @Override
-    public void stop() {
-        // TODO Auto-generated method stub
     }
 
     @Override
@@ -49,5 +39,15 @@ public class EchoService implements IService<IServiceRequest> {
     @Override
     public void setClient(ITelnetClient client) {
         this.client = client;
+    }
+
+    @Override
+    public void start() {
+        // TODO Auto-generated method stub
+    }
+
+    @Override
+    public void stop() {
+        // TODO Auto-generated method stub
     }
 }

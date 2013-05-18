@@ -12,29 +12,6 @@ import net.madz.download.engine.impl.metadata.MetaManager;
 
 public abstract class FileUtils {
 
-    public static void delete(File file) {
-        if ( !file.exists() ) return;
-        if ( file.isFile() ) {
-            int count = 0;
-            while ( !file.delete() ) {
-                count++;
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException ignored) {
-                    LogUtils.error(FileUtils.class, ignored);
-                }
-                if ( count > 10 ) {
-                    break;
-                }
-            }
-        } else {
-            for ( File f : file.listFiles() ) {
-                delete(f);
-            }
-            file.delete();
-        }
-    }
-
     public static File copy(File resFile, File objFolderFile) {
         if ( !resFile.exists() || !resFile.isFile() ) throw new IllegalStateException("resFile only accept file existed.");
         if ( !objFolderFile.exists() ) objFolderFile.mkdirs();
@@ -67,6 +44,29 @@ public abstract class FileUtils {
             }
         }
         return objFile;
+    }
+
+    public static void delete(File file) {
+        if ( !file.exists() ) return;
+        if ( file.isFile() ) {
+            int count = 0;
+            while ( !file.delete() ) {
+                count++;
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException ignored) {
+                    LogUtils.error(FileUtils.class, ignored);
+                }
+                if ( count > 10 ) {
+                    break;
+                }
+            }
+        } else {
+            for ( File f : file.listFiles() ) {
+                delete(f);
+            }
+            file.delete();
+        }
     }
 
     public static File move(File srcFile, File objFolderFile) {

@@ -20,17 +20,12 @@ import net.madz.download.service.responses.HelpResponse;
 public class HelpService implements IService<HelpRequest> {
 
     private final static HelpService service = new HelpService();
-    @SuppressWarnings("unused")
-    private ITelnetClient client;
-
     public static HelpService getInstance(String commandName) {
         return service;
     }
 
-    @Override
-    public void start() {
-        // TODO Auto-generated method stub
-    }
+    @SuppressWarnings("unused")
+    private ITelnetClient client;
 
     @Override
     public boolean isStarted() {
@@ -38,9 +33,20 @@ public class HelpService implements IService<HelpRequest> {
         return true;
     }
 
-    @Override
-    public void stop() {
-        // TODO Auto-generated method stub
+    private void iterateAllCommands(HelpResponse response, StringBuilder description) {
+        HashMap<String, IService<? extends IServiceRequest>> servicesregistry = ServiceHub.getInstance().getServicesregistry();
+        Iterator<Entry<String, IService<? extends IServiceRequest>>> iterator = servicesregistry.entrySet().iterator();
+        while ( iterator.hasNext() ) {
+            Entry<String, IService<? extends IServiceRequest>> next = iterator.next();
+            IService<? extends IServiceRequest> value = next.getValue();
+            Command command = value.getClass().getAnnotation(Command.class);
+            description.append(command.commandName());
+            description.append("\t");
+            description.append(command.description());
+            description.append("\n");
+        }
+        response.setCommandName("Help");
+        response.setDescription(description.toString());
     }
 
     @Override
@@ -100,24 +106,18 @@ public class HelpService implements IService<HelpRequest> {
         return response;
     }
 
-    private void iterateAllCommands(HelpResponse response, StringBuilder description) {
-        HashMap<String, IService<? extends IServiceRequest>> servicesregistry = ServiceHub.getInstance().getServicesregistry();
-        Iterator<Entry<String, IService<? extends IServiceRequest>>> iterator = servicesregistry.entrySet().iterator();
-        while ( iterator.hasNext() ) {
-            Entry<String, IService<? extends IServiceRequest>> next = iterator.next();
-            IService<? extends IServiceRequest> value = next.getValue();
-            Command command = value.getClass().getAnnotation(Command.class);
-            description.append(command.commandName());
-            description.append("\t");
-            description.append(command.description());
-            description.append("\n");
-        }
-        response.setCommandName("Help");
-        response.setDescription(description.toString());
-    }
-
     @Override
     public void setClient(ITelnetClient client) {
         this.client = client;
+    }
+
+    @Override
+    public void start() {
+        // TODO Auto-generated method stub
+    }
+
+    @Override
+    public void stop() {
+        // TODO Auto-generated method stub
     }
 }
